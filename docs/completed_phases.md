@@ -26,7 +26,7 @@ This document tracks the completed phases of the ClinicFlow Desktop & Offline-Fi
 
 ---
 
-## Phase 3: True Offline Authentication & Unified Schema
+## Phase 3 & 5: Shared Database Architecture & Universal ID System
 **Status:** Completed ✅
 
 **Details:**
@@ -38,3 +38,14 @@ This document tracks the completed phases of the ClinicFlow Desktop & Offline-Fi
   - Upon successful cloud authentication, the Cloud User is synced into the local SQLite database using their exact Cloud `ObjectId`.
   - The Local Server generates a brand new **Local JWT** using a local secret (`LOCAL_JWT_SECRET`) and sends it to the frontend.
 - Implemented an offline-first `protect` middleware in the Local Server to verify Local JWTs against the SQLite database, ensuring all dashboards and APIs work seamlessly even if the internet drops after a successful login.
+
+---
+
+## Phase 4, 6 & 8: Connection Manager, Sync Queue, and Local → Cloud Sync
+**Status:** Completed ✅
+
+**Details:**
+- Created a `sync_queue` SQLite table to track unsynchronized changes (`method`, `endpoint`, `payload`).
+- Updated all API routes to insert into the queue when operating offline.
+- Implemented a `<ConnectionBanner>` and `ConnectionContext` that automatically detects when the internet is lost or restored.
+- Built a Local → Cloud Sync Engine that automatically flushes the queue to MongoDB when the internet reconnects.

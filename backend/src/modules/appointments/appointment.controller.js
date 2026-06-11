@@ -68,6 +68,7 @@ exports.createAppointment = async (req, res, next) => {
     }
 
     const newAppointment = await Appointment.create({
+      ...req.body,
       clinicId: req.clinicId,
       patientId,
       doctorId,

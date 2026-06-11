@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const { protect } = require('../middlewares/auth');
 const { ObjectId } = require('bson');
+const { addToSyncQueue } = require('../utils/syncQueue');
 
 router.get('/', protect, (req, res) => {
   try {
@@ -29,6 +30,10 @@ router.post('/', protect, (req, res) => {
     const doctorCode = `DOC-${Math.floor(Math.random() * 1000)}`;
     const stmt = db.prepare('INSERT INTO doctors (id, doctor_code, name, email, phone, specialization, qualification, experience) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     stmt.run(id, doctorCode, name, email || 'doc@clinic.com', phone || '', specialization || 'General', qualification || 'MBBS', experience || 0);
+    
+    // Add to sync queue
+    addToSyncQueue('POST', '/doctors', { _id: id, doctorCode, ...req.body }, req.user.id);
+
     res.status(201).json({
       success: true,
       data: {

@@ -28,8 +28,8 @@ router.post('/login', async (req, res) => {
     const existingUser = db.prepare('SELECT * FROM users WHERE email = ?').get(cloudUser.email);
     let localUserId;
     if (existingUser) {
-      db.prepare('UPDATE users SET name = ?, role = ? WHERE email = ?')
-        .run(cloudUser.name || cloudUser.firstName, cloudUser.role, cloudUser.email);
+      db.prepare('UPDATE users SET name = ?, role = ?, cloud_token = ? WHERE email = ?')
+        .run(cloudUser.name || cloudUser.firstName, cloudUser.role, cloudData.data.token, cloudUser.email);
       localUserId = existingUser.id;
     } else {
       localUserId = cloudUser._id; // Use Cloud ID directly!
@@ -41,8 +41,8 @@ router.post('/login', async (req, res) => {
           .run(clinicId, 'Cloud Synced Clinic', 'admin@clinic.com', '0000000000');
       }
 
-      db.prepare('INSERT INTO users (id, clinic_id, name, email, password, role) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(localUserId, clinicId, cloudUser.name || cloudUser.firstName, cloudUser.email, 'cloud_managed', cloudUser.role);
+      db.prepare('INSERT INTO users (id, clinic_id, name, email, password, role, cloud_token) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .run(localUserId, clinicId, cloudUser.name || cloudUser.firstName, cloudUser.email, 'cloud_managed', cloudUser.role, cloudData.data.token);
     }
 
     // 3. Generate Local JWT

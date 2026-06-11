@@ -56,13 +56,23 @@ app.get('/', (req, res) => {
 });
 
 // Import Routes
-app.use('/api/v1/auth', require('./routes/auth'));
-app.use('/api/v1/patients', require('./routes/patients'));
-app.use('/api/v1/appointments', require('./routes/appointments'));
-app.use('/api/v1/dashboard', require('./routes/dashboard'));
-app.use('/api/v1/users', require('./routes/users'));
-app.use('/api/v1/doctors', require('./routes/doctors'));
-app.use('/api/v1/clinics', require('./routes/clinics'));
+const authRouter = require('./routes/auth');
+const patientsRouter = require('./routes/patients');
+const appointmentsRouter = require('./routes/appointments');
+const dashboardRouter = require('./routes/dashboard');
+const usersRouter = require('./routes/users');
+const doctorsRouter = require('./routes/doctors');
+const clinicsRouter = require('./routes/clinics');
+const syncRouter = require('./routes/sync');
+
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/patients', patientsRouter);
+app.use('/api/v1/appointments', appointmentsRouter);
+app.use('/api/v1/dashboard', dashboardRouter);
+app.use('/api/v1/users', usersRouter);
+app.use('/api/v1/doctors', doctorsRouter);
+app.use('/api/v1/clinics', clinicsRouter);
+app.use('/api/v1/sync', syncRouter);
 
 // Start Server on 0.0.0.0 (Accessible across LAN)
 app.listen(PORT, '0.0.0.0', () => {

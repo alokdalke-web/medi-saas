@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { ConnectionProvider } from "./context/ConnectionContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AuthLayout from "./layouts/AuthLayout";
 import MainLayout from "./layouts/MainLayout";
@@ -14,34 +15,36 @@ import AppointmentsList from './pages/Appointments/AppointmentsList';
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public Auth Routes */}
-          <Route element={<AuthLayout />}>
-            <Route path="/login" element={<Login />} />
-          </Route>
+      <ConnectionProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Auth Routes */}
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<Login />} />
+            </Route>
 
-          {/* Protected Main Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<Dashboard />} />
-              
-              {/* Admin & Receptionist Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['clinic_admin', 'receptionist']} />}>
-                <Route path="/patients" element={<PatientsList />} />
-                <Route path="/appointments" element={<AppointmentsList />} />
-                <Route path="/doctors" element={<DoctorsList />} />
-              </Route>
+            {/* Protected Main Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<Dashboard />} />
+                
+                {/* Admin & Receptionist Routes */}
+                <Route element={<ProtectedRoute allowedRoles={['clinic_admin', 'receptionist']} />}>
+                  <Route path="/patients" element={<PatientsList />} />
+                  <Route path="/appointments" element={<AppointmentsList />} />
+                  <Route path="/doctors" element={<DoctorsList />} />
+                </Route>
 
-              {/* Admin Only Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['clinic_admin']} />}>
-                <Route path="/users" element={<UsersList />} />
-                <Route path="/settings" element={<ClinicSettings />} />
+                {/* Admin Only Routes */}
+                <Route element={<ProtectedRoute allowedRoles={['clinic_admin']} />}>
+                  <Route path="/users" element={<UsersList />} />
+                  <Route path="/settings" element={<ClinicSettings />} />
+                </Route>
               </Route>
             </Route>
-          </Route>
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </ConnectionProvider>
     </AuthProvider>
   );
 }

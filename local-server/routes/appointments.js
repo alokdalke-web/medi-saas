@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const { protect } = require('../middlewares/auth');
 const { ObjectId } = require('bson');
+const { addToSyncQueue } = require('../utils/syncQueue');
 
 // Get all appointments
 router.get('/', protect, (req, res) => {
@@ -38,6 +39,10 @@ router.post('/', protect, (req, res) => {
     const id = new ObjectId().toString();
     const stmt = db.prepare('INSERT INTO appointments (id, patient_id, doctor_id, appointment_date, appointment_time, status, reason, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     stmt.run(id, patientId, doctorId, appointmentDate, appointmentTime || '09:00', status || 'scheduled', reason || '', req.user.id);
+    
+    // Add to sync queue
+    addToSyncQueue('POST', '/appointments', { _id: id, ...req.body }, req.user.id);
+
     res.status(201).json({ success: true, data: { appointment: { _id: id, ...req.body } } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -54,6 +59,10 @@ router.put('/:id', protect, (req, res) => {
     if (info.changes === 0) {
       return res.status(404).json({ success: false, message: 'Appointment not found' });
     }
+    
+    // Add to sync queue
+    addToSyncQueue('PUT', `/appointments/${id}`, { status }, req.user.id);
+
     res.json({ success: true, data: { appointment: { _id: id, status } } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
