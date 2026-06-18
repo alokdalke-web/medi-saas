@@ -46,6 +46,17 @@ export default function AppointmentsList() {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (confirm('Are you sure you want to permanently delete this appointment?')) {
+      try {
+        await fetchApi(`/appointments/${id}`, { method: 'DELETE' });
+        fetchAppointments();
+      } catch (err) {
+        alert(err.message || 'Failed to delete appointment');
+      }
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       scheduled: 'bg-blue-100 text-blue-800',
@@ -162,6 +173,12 @@ export default function AppointmentsList() {
                         <XCircleIcon className="mr-1.5 h-4 w-4" /> Cancel
                       </button>
                     )}
+                    <button
+                      onClick={() => handleDelete(apt._id)}
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 ml-2"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               </li>

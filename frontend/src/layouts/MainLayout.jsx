@@ -1,11 +1,11 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { HomeIcon, UserGroupIcon, UsersIcon, ArrowRightOnRectangleIcon, CalendarIcon, CloudArrowUpIcon, SignalSlashIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, UserGroupIcon, UsersIcon, ArrowRightOnRectangleIcon, CalendarIcon, CloudArrowUpIcon, SignalSlashIcon, ComputerDesktopIcon } from '@heroicons/react/24/outline';
 import { useAuth } from "../context/AuthContext";
 import { useConnection } from "../context/ConnectionContext";
 
 export default function MainLayout() {
   const { logout, user } = useAuth();
-  const { isOnline, isSyncing, pendingCount, flushSyncQueue } = useConnection();
+  const { isOnline, isSyncing, pendingCount, flushSyncQueue, activeEndpoint, syncTimestamp } = useConnection();
 
   return (
     <div className="min-h-screen flex bg-slate-100">
@@ -17,6 +17,11 @@ export default function MainLayout() {
             <li>
               <NavLink to="/" end className={({isActive}) => `block px-4 py-2 rounded ${isActive ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}>
                 Dashboard
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/network" className={({isActive}) => `block px-4 py-2 rounded ${isActive ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}>
+                Network Status
               </NavLink>
             </li>
             {user?.role !== 'doctor' && (
@@ -84,7 +89,14 @@ export default function MainLayout() {
         </header>
 
         {/* Connection Banner */}
-        {!isOnline && (
+        {activeEndpoint === 'cloud' && (
+          <div className="bg-orange-50 border-b border-orange-200 px-6 py-2 flex items-center space-x-2 text-orange-700 text-sm">
+            <SignalSlashIcon className="h-4 w-4" />
+            <span className="font-medium">Local Server Offline.</span>
+            <span>Operating directly on Cloud API. Local features may be limited.</span>
+          </div>
+        )}
+        {!isOnline && activeEndpoint === 'local' && (
           <div className="bg-red-50 border-b border-red-200 px-6 py-2 flex items-center space-x-2 text-red-700 text-sm">
             <SignalSlashIcon className="h-4 w-4" />
             <span className="font-medium">You are offline.</span>
@@ -103,7 +115,7 @@ export default function MainLayout() {
 
         {/* Page Content */}
         <div className="flex-1 p-6 overflow-auto">
-          <Outlet />
+          <Outlet key={syncTimestamp} />
         </div>
       </main>
     </div>

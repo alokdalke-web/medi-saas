@@ -34,19 +34,19 @@ export default function Login() {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="flex gap-2 justify-center p-2 bg-slate-50 rounded-md border border-slate-100">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              type="button" 
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
               onClick={() => { setEmail('admin@clinic.com'); setPassword('password123'); }}
               className="text-xs h-8"
             >
               Test Admin
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              type="button" 
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
               onClick={() => { setEmail('test@gmail.com'); setPassword('123456'); }}
               className="text-xs h-8"
             >
@@ -79,10 +79,11 @@ export default function Login() {
             />
           </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex-col gap-4">
           <Button className="w-full" type="submit" disabled={isLoading}>
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
+
         </CardFooter>
       </form>
     </Card>

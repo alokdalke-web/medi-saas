@@ -1,5 +1,16 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+
+// Local Runtime Layer Services
+const dbService = require('./desktop/database/DatabaseService.cjs');
+const nodeIdentityService = require('./desktop/services/NodeIdentityService.cjs');
+const eventStoreService = require('./desktop/services/EventStoreService.cjs');
+const syncService = require('./desktop/sync/SyncService.cjs');
+const discoveryService = require('./desktop/discovery/DiscoveryService.cjs');
+const auditService = require('./desktop/services/AuditService.cjs');
+const localApi = require('./desktop/api/LocalApi.cjs');
+const peerApi = require('./desktop/api/PeerApi.cjs');
+const dataMigrationTool = require('./desktop/tools/DataMigrationTool.cjs');
 
 // Determine if we are in development mode based on whether the app is packaged
 // or by explicitly checking for an environment variable if provided by concurrently.
@@ -24,9 +35,43 @@ function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, '../dist/index.html'));
   }
+
+  // Intercept frontend console logs and print them to the terminal
+  win.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[Frontend] ${message}`);
+  });
 }
 
 app.whenReady().then(() => {
+  // 1. Initialize Local Runtime Layer
+  try {
+    dbService.initialize();
+    
+    // Phase 3: Initialize Node Identity
+    nodeIdentityService.initialize();
+    const nodeId = nodeIdentityService.getNodeId();
+    
+    // Phase 11: Migrate Legacy Data
+    dataMigrationTool.runMigration(nodeId);
+    
+    eventStoreService.initialize(nodeId);
+    syncService.initialize();
+    
+    // Phase 4: Start Peer API Server and Sync Polling
+    peerApi.initialize();
+    syncService.startPolling();
+    discoveryService.initialize();
+    auditService.initialize(nodeId);
+    console.log('[Main] Local Runtime Layer Initialized Successfully');
+  } catch (err) {
+    console.error('[Main] Failed to initialize Local Runtime Layer:', err);
+  }
+
+  // 2. Setup IPC API Bridge
+  ipcMain.handle('api-request', async (event, args) => {
+    return await localApi.handleRequest(args.endpoint, args.options);
+  });
+
   createWindow();
 
   app.on('activate', () => {

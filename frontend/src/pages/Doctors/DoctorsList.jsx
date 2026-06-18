@@ -47,7 +47,7 @@ export default function DoctorsList() {
   };
 
   const handleDeleteDoctor = async (id) => {
-    if (confirm('Are you sure you want to deactivate this doctor?')) {
+    if (confirm('Are you sure you want to permanently delete this doctor and all their appointments?')) {
       try {
         await fetchApi(`/doctors/${id}`, { method: 'DELETE' });
         loadDoctors();

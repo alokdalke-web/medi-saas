@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getApiUrl } from '../services/api';
+import { fetchApi } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -14,15 +14,13 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       if (token) {
         try {
-          const res = await fetch(`${getApiUrl()}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          const data = await res.json();
-          if (data.success) {
-            setUser(data.data.user);
+          const data = await fetchApi('/auth/me');
+          if (data) {
+            setUser(data);
           } else {
             // Token invalid or expired
             localStorage.removeItem('token');
+            localStorage.removeItem('cloudToken');
             setToken(null);
             setUser(null);
           }
@@ -38,20 +36,18 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     // Call API here
     try {
-      const res = await fetch(`${getApiUrl()}/auth/login`, {
+      const data = await fetchApi('/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
-
-      if (data.success) {
-        localStorage.setItem('token', data.data.token);
-        setToken(data.data.token);
-        setUser(data.data.user);
+      if (data && data.token) {
+        localStorage.setItem('token', data.token);
+        setToken(data.token);
+        setUser(data.user);
         return { success: true };
       }
+      return { success: false, message: 'Invalid response' };
       return { success: false, message: data.message };
     } catch (e) {
       return { success: false, message: 'Server unreachable' };
@@ -60,9 +56,16 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('cloudToken');
     setToken(null);
     setUser(null);
   };
+
+  useEffect(() => {
+    const handleAuthError = () => logout();
+    window.addEventListener('auth_error', handleAuthError);
+    return () => window.removeEventListener('auth_error', handleAuthError);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, logout }}>

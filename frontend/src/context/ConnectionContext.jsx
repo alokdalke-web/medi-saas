@@ -7,7 +7,6 @@ export function ConnectionProvider({ children }) {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
-
   const checkPending = async () => {
     if (!localStorage.getItem('token')) return;
     try {
@@ -44,11 +43,21 @@ export function ConnectionProvider({ children }) {
     }
   };
 
-  // Initial check
+  // Phase 6: Listen for real-time P2P sync updates from the Electron main process
+  useEffect(() => {
+    if (window.electronAPI && window.electronAPI.onSyncUpdate) {
+      window.electronAPI.onSyncUpdate((payload) => {
+        console.log('[React] Received real-time P2P sync update:', payload);
+        
+        // Broadcast a standard DOM event so any mounted React component can re-fetch its data
+        window.dispatchEvent(new CustomEvent('p2p-sync-update', { detail: payload }));
+      });
+    }
+  }, []);
+
+  // Initial check on mount
   useEffect(() => {
     checkPending();
-    const interval = setInterval(checkPending, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

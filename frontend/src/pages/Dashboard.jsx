@@ -181,12 +181,23 @@ export default function Dashboard() {
   useEffect(() => {
     fetchStats();
     
+    // Listen for real-time P2P sync events from other nodes
+    const handleSyncUpdate = () => {
+      console.log('[Dashboard] P2P Sync Update received, refreshing stats...');
+      fetchStats();
+    };
+    window.addEventListener('p2p-sync-update', handleSyncUpdate);
+    
     // If receptionist, auto-poll every 30 seconds for live queue updates
     let interval;
     if (user?.role === 'receptionist') {
       interval = setInterval(fetchStats, 30000);
     }
-    return () => clearInterval(interval);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('p2p-sync-update', handleSyncUpdate);
+    };
   }, [user]);
 
   if (loading && !stats) {

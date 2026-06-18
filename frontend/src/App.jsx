@@ -11,6 +11,7 @@ import UsersList from "./pages/Users/UsersList";
 import DoctorsList from "./pages/Doctors/DoctorsList";
 import PatientsList from "./pages/Patients/PatientsList";
 import AppointmentsList from './pages/Appointments/AppointmentsList';
+import NetworkNodes from './pages/Network/NetworkNodes';
 
 function App() {
   return (
@@ -27,7 +28,8 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
                 <Route path="/" element={<Dashboard />} />
-                
+                <Route path="/network" element={<NetworkNodes />} />
+
                 {/* Admin & Receptionist Routes */}
                 <Route element={<ProtectedRoute allowedRoles={['clinic_admin', 'receptionist']} />}>
                   <Route path="/patients" element={<PatientsList />} />
