@@ -16,6 +16,12 @@ export default function AppointmentsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState(null);
+
+  const openReschedule = (apt) => {
+    setEditingAppointment(apt);
+    setIsFormOpen(true);
+  };
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]); // Today
 
   const fetchAppointments = async () => {
@@ -97,7 +103,7 @@ export default function AppointmentsList() {
             className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border"
           />
           <button
-            onClick={() => setIsFormOpen(true)}
+            onClick={() => { setEditingAppointment(null); setIsFormOpen(true); }}
             className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             New Appointment
@@ -184,6 +190,14 @@ export default function AppointmentsList() {
                         <XCircleIcon className="mr-1.5 h-4 w-4" /> Cancel
                       </button>
                     )}
+                    {apt.status === 'waitlisted' && (
+                      <button
+                        onClick={() => openReschedule(apt)}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-orange-700 bg-orange-100 hover:bg-orange-200"
+                      >
+                        <CalendarIcon className="mr-1.5 h-4 w-4" /> Reschedule
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDelete(apt._id)}
                       className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 ml-2"
@@ -200,9 +214,11 @@ export default function AppointmentsList() {
 
       <AppointmentFormDialog 
         isOpen={isFormOpen} 
-        onClose={() => setIsFormOpen(false)} 
+        onClose={() => { setIsFormOpen(false); setEditingAppointment(null); }} 
+        appointmentData={editingAppointment}
         onSuccess={() => {
           setIsFormOpen(false);
+          setEditingAppointment(null);
           fetchAppointments();
         }}
       />

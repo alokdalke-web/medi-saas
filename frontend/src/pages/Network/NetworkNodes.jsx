@@ -4,6 +4,8 @@ import { ComputerDesktopIcon, ServerStackIcon, WifiIcon, SignalIcon } from '@her
 
 export default function NetworkNodes() {
   const [nodes, setNodes] = useState([]);
+  const [cloudUrl, setCloudUrl] = useState('');
+  const [savingUrl, setSavingUrl] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -14,10 +16,30 @@ export default function NetworkNodes() {
       // Sort nodes by lastSeen descending
       const sortedNodes = (res.data?.nodes || []).sort((a, b) => b.lastSeen - a.lastSeen);
       setNodes(sortedNodes);
+
+      const urlRes = await fetchApi('/network/cloud-url');
+      if (urlRes.data?.cloudUrl) {
+        setCloudUrl(urlRes.data.cloudUrl);
+      }
     } catch (err) {
       setError(err.message || 'Failed to fetch network nodes');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveCloudUrl = async () => {
+    try {
+      setSavingUrl(true);
+      await fetchApi('/network/cloud-url', {
+        method: 'POST',
+        body: JSON.stringify({ cloudUrl })
+      });
+      alert('Cloud Sync URL saved successfully!');
+    } catch (err) {
+      alert(err.message || 'Failed to save Cloud URL');
+    } finally {
+      setSavingUrl(false);
     }
   };
 
@@ -61,6 +83,31 @@ export default function NetworkNodes() {
       </div>
 
       {error && <div className="text-red-600 bg-red-50 p-4 rounded-md">{error}</div>}
+
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h2 className="text-lg font-medium text-slate-800 mb-4">Cloud Backend Configuration</h2>
+        <div className="flex gap-4 items-end">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Cloud Sync URL Endpoint
+            </label>
+            <input
+              type="text"
+              value={cloudUrl}
+              onChange={(e) => setCloudUrl(e.target.value)}
+              placeholder="http://localhost:5000/api/v1/sync"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          <button
+            onClick={handleSaveCloudUrl}
+            disabled={savingUrl}
+            className="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {savingUrl ? 'Saving...' : 'Save Config'}
+          </button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {/* Render Self Card (Mocked for context, since DiscoveryService filters out self, we just show "This Computer") */}

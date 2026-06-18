@@ -96,6 +96,31 @@ class LocalApi {
       }
 
       // 2. Clinics CRUD
+      if (endpoint === '/network/nodes') {
+        if (method === 'GET') {
+          const discoveryService = require('../discovery/DiscoveryService.cjs');
+          const nodes = discoveryService.getDiscoveredPeers();
+          return { data: { nodes } };
+        }
+      }
+
+      if (endpoint === '/network/cloud-url') {
+        const nodeIdentityService = require('../services/NodeIdentityService.cjs');
+        if (method === 'GET') {
+          return { data: { cloudUrl: nodeIdentityService.getCloudUrl() } };
+        }
+        if (method === 'POST') {
+          nodeIdentityService.setCloudUrl(body.cloudUrl);
+          
+          // Restart CloudSyncService to pick up new URL
+          const cloudSyncService = require('../services/CloudSyncService.cjs');
+          cloudSyncService.stop();
+          cloudSyncService.start();
+
+          return { success: true };
+        }
+      }
+
       if (endpoint === '/clinics' && method === 'GET') {
         const clinics = db.prepare('SELECT * FROM clinics').all();
         return clinics;

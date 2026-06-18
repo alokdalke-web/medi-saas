@@ -3,7 +3,7 @@ import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { fetchApi } from '../../services/api';
 
-export default function AppointmentFormDialog({ isOpen, onClose, onSuccess }) {
+export default function AppointmentFormDialog({ isOpen, onClose, onSuccess, appointmentData = null }) {
   const [formData, setFormData] = useState({
     patientId: '',
     doctorId: '',
@@ -19,16 +19,27 @@ export default function AppointmentFormDialog({ isOpen, onClose, onSuccess }) {
   useEffect(() => {
     if (isOpen) {
       fetchPatientsAndDoctors();
-      setFormData({
-        patientId: '',
-        doctorId: '',
-        appointmentDate: new Date().toISOString().split('T')[0],
-        appointmentTime: '10:00',
-        reason: ''
-      });
+      if (appointmentData) {
+        setFormData({
+          patientId: appointmentData.patientId?._id || appointmentData.patientId,
+          doctorId: appointmentData.doctorId?._id || appointmentData.doctorId,
+          appointmentDate: new Date(appointmentData.appointmentDate).toISOString().split('T')[0],
+          appointmentTime: appointmentData.appointmentTime,
+          reason: appointmentData.reason || '',
+          status: 'scheduled' // Automatically mark as scheduled when rescheduling
+        });
+      } else {
+        setFormData({
+          patientId: '',
+          doctorId: '',
+          appointmentDate: new Date().toISOString().split('T')[0],
+          appointmentTime: '10:00',
+          reason: ''
+        });
+      }
       setError('');
     }
-  }, [isOpen]);
+  }, [isOpen, appointmentData]);
 
   const fetchPatientsAndDoctors = async () => {
     try {
@@ -50,13 +61,20 @@ export default function AppointmentFormDialog({ isOpen, onClose, onSuccess }) {
     setLoading(true);
 
     try {
-      await fetchApi('/appointments', {
-        method: 'POST',
-        body: JSON.stringify(formData)
-      });
+      if (appointmentData) {
+        await fetchApi(`/appointments/${appointmentData._id}`, {
+          method: 'PUT',
+          body: JSON.stringify(formData)
+        });
+      } else {
+        await fetchApi('/appointments', {
+          method: 'POST',
+          body: JSON.stringify(formData)
+        });
+      }
       onSuccess();
     } catch (err) {
-      setError(err.message || 'Failed to create appointment');
+      setError(err.message || 'Failed to save appointment');
     } finally {
       setLoading(false);
     }
@@ -77,7 +95,7 @@ export default function AppointmentFormDialog({ isOpen, onClose, onSuccess }) {
         <Dialog.Panel className="mx-auto max-w-md w-full bg-white rounded-xl shadow-xl overflow-hidden">
           <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-gray-50">
             <Dialog.Title className="text-lg font-semibold text-gray-900">
-              Book Appointment
+              {appointmentData ? 'Reschedule Appointment' : 'Book Appointment'}
             </Dialog.Title>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
               <XMarkIcon className="h-6 w-6" />
@@ -177,7 +195,7 @@ export default function AppointmentFormDialog({ isOpen, onClose, onSuccess }) {
                 disabled={loading}
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none disabled:bg-indigo-400"
               >
-                {loading ? 'Booking...' : 'Book Appointment'}
+                {loading ? 'Saving...' : (appointmentData ? 'Save Changes' : 'Book Appointment')}
               </button>
             </div>
           </form>

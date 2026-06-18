@@ -149,7 +149,8 @@ class DatabaseService {
         payload TEXT,
         version INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        synced INTEGER DEFAULT 0
+        synced INTEGER DEFAULT 0,
+        cloud_synced INTEGER DEFAULT 0
       );
 
       -- Upcoming Sync State Checkpoints (Phase 7)
@@ -170,7 +171,14 @@ class DatabaseService {
       );
     `);
 
-    console.log("[DatabaseService] Schema successfully initialized.");
+    // Schema Migrations
+    try {
+      this.db.exec(`ALTER TABLE events ADD COLUMN cloud_synced INTEGER DEFAULT 0;`);
+    } catch(e) {
+      // Column already exists
+    }
+
+    console.log("[DatabaseService] Schema initialized successfully");
   }
 
   // Helper function to get database instance

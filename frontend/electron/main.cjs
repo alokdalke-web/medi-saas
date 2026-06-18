@@ -5,8 +5,9 @@ const path = require('path');
 const dbService = require('./desktop/database/DatabaseService.cjs');
 const nodeIdentityService = require('./desktop/services/NodeIdentityService.cjs');
 const eventStoreService = require('./desktop/services/EventStoreService.cjs');
-const syncService = require('./desktop/sync/SyncService.cjs');
 const discoveryService = require('./desktop/discovery/DiscoveryService.cjs');
+const syncService = require('./desktop/sync/SyncService.cjs');
+const cloudSyncService = require('./desktop/services/CloudSyncService.cjs');
 const auditService = require('./desktop/services/AuditService.cjs');
 const localApi = require('./desktop/api/LocalApi.cjs');
 const peerApi = require('./desktop/api/PeerApi.cjs');
@@ -54,6 +55,9 @@ app.whenReady().then(() => {
     // Phase 11: Migrate Legacy Data
     dataMigrationTool.runMigration(nodeId);
     
+    // TEMPORARY: Reset cloud sync status to push all historic events to the new backend
+    dbService.getDb().prepare('UPDATE events SET cloud_synced = 0').run();
+
     eventStoreService.initialize(nodeId);
     syncService.initialize();
     
@@ -62,7 +66,10 @@ app.whenReady().then(() => {
     syncService.startPolling();
     discoveryService.initialize();
     auditService.initialize(nodeId);
-    console.log('[Main] Local Runtime Layer Initialized Successfully');
+    // 5. Start Background Cloud Sync
+    cloudSyncService.start();
+
+    console.log('[App] All backend services started successfully!');
   } catch (err) {
     console.error('[Main] Failed to initialize Local Runtime Layer:', err);
   }
