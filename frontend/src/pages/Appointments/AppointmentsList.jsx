@@ -32,6 +32,16 @@ export default function AppointmentsList() {
 
   useEffect(() => {
     fetchAppointments();
+
+    const handleSync = (e) => {
+      // Refresh if the sync event touched appointments or patients
+      if (e.detail?.entityType === 'appointments' || e.detail?.entityType === 'patients') {
+        fetchAppointments();
+      }
+    };
+    
+    window.addEventListener('p2p-sync-update', handleSync);
+    return () => window.removeEventListener('p2p-sync-update', handleSync);
   }, [filterDate]);
 
   const handleStatusChange = async (id, newStatus) => {

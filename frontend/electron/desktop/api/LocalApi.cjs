@@ -52,6 +52,11 @@ class LocalApi {
         this.verifyTokenAndRole(token, endpoint, method);
       }
 
+      const getVersion = (id, explicitVersion) => {
+        if (typeof explicitVersion === 'number') return explicitVersion;
+        return db.prepare('SELECT MAX(version) as v FROM events WHERE entity_id = ?').get(id)?.v || 0;
+      };
+
       // Basic routing logic
       
       // 1. Auth mock (so frontend doesn't crash while we migrate fully)
@@ -162,12 +167,12 @@ class LocalApi {
       }
       if (endpoint.startsWith('/patients/') && method === 'PUT') {
         const id = endpoint.split('/')[2];
-        eventStoreService.saveEvent('PatientUpdated', 'patients', id, body, body.expectedVersion || 0, token || 'local_admin_1');
+        eventStoreService.saveEvent('PatientUpdated', 'patients', id, body, getVersion(id, body.expectedVersion), token || 'local_admin_1');
         return { data: { patient: { _id: id, ...body } } };
       }
       if (endpoint.startsWith('/patients/') && method === 'DELETE') {
         const id = endpoint.split('/')[2];
-        eventStoreService.saveEvent('PatientDeleted', 'patients', id, { isDeleted: true }, 0, token || 'local_admin_1');
+        eventStoreService.saveEvent('PatientDeleted', 'patients', id, { isDeleted: true }, getVersion(id), token || 'local_admin_1');
         return { success: true };
       }
 
@@ -190,12 +195,12 @@ class LocalApi {
       }
       if (endpoint.startsWith('/doctors/') && method === 'PUT') {
         const id = endpoint.split('/')[2];
-        eventStoreService.saveEvent('DoctorUpdated', 'doctors', id, body, body.expectedVersion || 0, token || 'local_admin_1');
+        eventStoreService.saveEvent('DoctorUpdated', 'doctors', id, body, getVersion(id, body.expectedVersion), token || 'local_admin_1');
         return { data: { doctor: { _id: id, ...body } } };
       }
       if (endpoint.startsWith('/doctors/') && method === 'DELETE') {
         const id = endpoint.split('/')[2];
-        eventStoreService.saveEvent('DoctorDeleted', 'doctors', id, { isDeleted: true }, 0, token || 'local_admin_1');
+        eventStoreService.saveEvent('DoctorDeleted', 'doctors', id, { isDeleted: true }, getVersion(id), token || 'local_admin_1');
         return { success: true };
       }
 
@@ -216,12 +221,12 @@ class LocalApi {
       }
       if (endpoint.startsWith('/users/') && method === 'PUT') {
         const id = endpoint.split('/')[2];
-        eventStoreService.saveEvent('UserUpdated', 'users', id, body, body.expectedVersion || 0, token || 'local_admin_1');
+        eventStoreService.saveEvent('UserUpdated', 'users', id, body, getVersion(id, body.expectedVersion), token || 'local_admin_1');
         return { data: { user: { _id: id, ...body } } };
       }
       if (endpoint.startsWith('/users/') && method === 'DELETE') {
         const id = endpoint.split('/')[2];
-        eventStoreService.saveEvent('UserDeleted', 'users', id, { isDeleted: true }, 0, token || 'local_admin_1');
+        eventStoreService.saveEvent('UserDeleted', 'users', id, { isDeleted: true }, getVersion(id), token || 'local_admin_1');
         return { success: true };
       }
 
@@ -251,6 +256,15 @@ class LocalApi {
           return { data: { appointments } };
         }
         if (method === 'POST') {
+          const existing = db.prepare(`
+            SELECT id FROM appointments 
+            WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? AND status != 'cancelled'
+          `).get(body.doctorId, body.appointmentDate, body.appointmentTime);
+          
+          if (existing) {
+            throw new Error('This time slot is already booked for the selected doctor.');
+          }
+
           const id = crypto.randomUUID();
           eventStoreService.saveEvent('AppointmentCreated', 'appointments', id, body, 0, token || 'local_admin_1');
           return { data: { appointment: { _id: id, ...body } } };
@@ -258,12 +272,25 @@ class LocalApi {
       }
       if (endpoint.startsWith('/appointments/') && method === 'PUT') {
         const id = endpoint.split('/')[2];
-        eventStoreService.saveEvent('AppointmentUpdated', 'appointments', id, body, body.expectedVersion || 0, token || 'local_admin_1');
+        
+        if (body.appointmentDate && body.appointmentTime) {
+           const docId = body.doctorId || db.prepare('SELECT doctor_id FROM appointments WHERE id = ?').get(id)?.doctor_id;
+           const existing = db.prepare(`
+             SELECT id FROM appointments 
+             WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? AND status != 'cancelled' AND id != ?
+           `).get(docId, body.appointmentDate, body.appointmentTime, id);
+           
+           if (existing) {
+             throw new Error('This time slot is already booked for the selected doctor.');
+           }
+        }
+
+        eventStoreService.saveEvent('AppointmentUpdated', 'appointments', id, body, getVersion(id, body.expectedVersion), token || 'local_admin_1');
         return { data: { appointment: { _id: id, ...body } } };
       }
       if (endpoint.startsWith('/appointments/') && method === 'DELETE') {
         const id = endpoint.split('/')[2];
-        eventStoreService.saveEvent('AppointmentDeleted', 'appointments', id, { isDeleted: true }, 0, token || 'local_admin_1');
+        eventStoreService.saveEvent('AppointmentDeleted', 'appointments', id, { isDeleted: true }, getVersion(id), token || 'local_admin_1');
         return { success: true };
       }
 
@@ -305,6 +332,11 @@ class LocalApi {
       
       // Phase 8: Handle Optimistic Concurrency Control Conflicts
       if (error.message.includes('Conflict Detected')) {
+        return { error: 'Conflict', status: 409, message: error.message };
+      }
+
+      // Handle Double Booking Validation
+      if (error.message.includes('already booked')) {
         return { error: 'Conflict', status: 409, message: error.message };
       }
       

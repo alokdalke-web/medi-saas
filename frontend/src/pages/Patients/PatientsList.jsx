@@ -39,7 +39,17 @@ export default function PatientsList() {
       loadPatients(search);
     }, 500);
 
-    return () => clearTimeout(delayDebounceFn);
+    const handleSync = (e) => {
+      if (e.detail?.entityType === 'patients') {
+        loadPatients(search);
+      }
+    };
+    window.addEventListener('p2p-sync-update', handleSync);
+
+    return () => {
+      clearTimeout(delayDebounceFn);
+      window.removeEventListener('p2p-sync-update', handleSync);
+    };
   }, [search]);
 
   const handleAddPatient = () => {

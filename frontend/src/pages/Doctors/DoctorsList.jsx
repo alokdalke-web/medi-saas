@@ -34,6 +34,17 @@ export default function DoctorsList() {
 
   useEffect(() => {
     loadDoctors();
+
+    const handleSync = (e) => {
+      if (e.detail?.entityType === 'doctors') {
+        loadDoctors();
+      }
+    };
+    window.addEventListener('p2p-sync-update', handleSync);
+
+    return () => {
+      window.removeEventListener('p2p-sync-update', handleSync);
+    };
   }, []);
 
   const handleAddDoctor = () => {
