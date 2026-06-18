@@ -167,8 +167,34 @@ class LocalApi {
       }
       if (endpoint.startsWith('/patients/') && method === 'PUT') {
         const id = endpoint.split('/')[2];
-        eventStoreService.saveEvent('PatientUpdated', 'patients', id, body, getVersion(id, body.expectedVersion), token || 'local_admin_1');
-        return { data: { patient: { _id: id, ...body } } };
+        const existing = db.prepare('SELECT * FROM patients WHERE id = ?').get(id);
+        if (!existing) throw new Error('Patient not found');
+        
+        const updatedBody = {
+          ...body,
+          firstName: body.firstName !== undefined ? body.firstName : existing.first_name,
+          lastName: body.lastName !== undefined ? body.lastName : existing.last_name,
+          gender: body.gender !== undefined ? body.gender : existing.gender,
+          dateOfBirth: body.dateOfBirth !== undefined ? body.dateOfBirth : existing.date_of_birth,
+          phone: body.phone !== undefined ? body.phone : existing.phone,
+          email: body.email !== undefined ? body.email : existing.email,
+          bloodGroup: body.bloodGroup !== undefined ? body.bloodGroup : existing.blood_group,
+          address: body.address || {
+             street: existing.address_street,
+             city: existing.address_city,
+             state: existing.address_state,
+             country: existing.address_country,
+             pincode: existing.address_pincode
+          },
+          emergencyContact: body.emergencyContact || {
+             name: existing.emergency_name,
+             phone: existing.emergency_phone,
+             relation: existing.emergency_rel
+          }
+        };
+
+        eventStoreService.saveEvent('PatientUpdated', 'patients', id, updatedBody, getVersion(id, body.expectedVersion), token || 'local_admin_1');
+        return { data: { patient: { _id: id, ...updatedBody } } };
       }
       if (endpoint.startsWith('/patients/') && method === 'DELETE') {
         const id = endpoint.split('/')[2];
@@ -195,8 +221,22 @@ class LocalApi {
       }
       if (endpoint.startsWith('/doctors/') && method === 'PUT') {
         const id = endpoint.split('/')[2];
-        eventStoreService.saveEvent('DoctorUpdated', 'doctors', id, body, getVersion(id, body.expectedVersion), token || 'local_admin_1');
-        return { data: { doctor: { _id: id, ...body } } };
+        const existing = db.prepare('SELECT * FROM doctors WHERE id = ?').get(id);
+        if (!existing) throw new Error('Doctor not found');
+
+        const updatedBody = {
+          ...body,
+          name: body.name !== undefined ? body.name : existing.name,
+          email: body.email !== undefined ? body.email : existing.email,
+          phone: body.phone !== undefined ? body.phone : existing.phone,
+          specialization: body.specialization !== undefined ? body.specialization : existing.specialization,
+          qualification: body.qualification !== undefined ? body.qualification : existing.qualification,
+          experience: body.experience !== undefined ? body.experience : existing.experience,
+          isActive: body.isActive !== undefined ? body.isActive : (existing.is_active === 1)
+        };
+
+        eventStoreService.saveEvent('DoctorUpdated', 'doctors', id, updatedBody, getVersion(id, body.expectedVersion), token || 'local_admin_1');
+        return { data: { doctor: { _id: id, ...updatedBody } } };
       }
       if (endpoint.startsWith('/doctors/') && method === 'DELETE') {
         const id = endpoint.split('/')[2];
@@ -221,8 +261,20 @@ class LocalApi {
       }
       if (endpoint.startsWith('/users/') && method === 'PUT') {
         const id = endpoint.split('/')[2];
-        eventStoreService.saveEvent('UserUpdated', 'users', id, body, getVersion(id, body.expectedVersion), token || 'local_admin_1');
-        return { data: { user: { _id: id, ...body } } };
+        const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+        if (!existing) throw new Error('User not found');
+
+        const updatedBody = {
+          ...body,
+          name: body.name !== undefined ? body.name : existing.name,
+          email: body.email !== undefined ? body.email : existing.email,
+          phone: body.phone !== undefined ? body.phone : existing.phone,
+          role: body.role !== undefined ? body.role : existing.role,
+          isActive: body.isActive !== undefined ? body.isActive : (existing.is_active === 1)
+        };
+
+        eventStoreService.saveEvent('UserUpdated', 'users', id, updatedBody, getVersion(id, body.expectedVersion), token || 'local_admin_1');
+        return { data: { user: { _id: id, ...updatedBody } } };
       }
       if (endpoint.startsWith('/users/') && method === 'DELETE') {
         const id = endpoint.split('/')[2];
@@ -273,20 +325,33 @@ class LocalApi {
       if (endpoint.startsWith('/appointments/') && method === 'PUT') {
         const id = endpoint.split('/')[2];
         
-        if (body.appointmentDate && body.appointmentTime) {
-           const docId = body.doctorId || db.prepare('SELECT doctor_id FROM appointments WHERE id = ?').get(id)?.doctor_id;
-           const existing = db.prepare(`
+        // Fetch existing to support partial updates
+        const existingAppt = db.prepare('SELECT * FROM appointments WHERE id = ?').get(id);
+        if (!existingAppt) throw new Error('Appointment not found');
+
+        const updatedBody = {
+          ...body,
+          status: body.status !== undefined ? body.status : existingAppt.status,
+          reason: body.reason !== undefined ? body.reason : existingAppt.reason,
+          appointmentDate: body.appointmentDate !== undefined ? body.appointmentDate : existingAppt.appointment_date,
+          appointmentTime: body.appointmentTime !== undefined ? body.appointmentTime : existingAppt.appointment_time,
+          doctorId: body.doctorId !== undefined ? body.doctorId : existingAppt.doctor_id,
+          patientId: body.patientId !== undefined ? body.patientId : existingAppt.patient_id
+        };
+        
+        if (updatedBody.appointmentDate && updatedBody.appointmentTime) {
+           const existingConflict = db.prepare(`
              SELECT id FROM appointments 
              WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? AND status != 'cancelled' AND id != ?
-           `).get(docId, body.appointmentDate, body.appointmentTime, id);
+           `).get(updatedBody.doctorId, updatedBody.appointmentDate, updatedBody.appointmentTime, id);
            
-           if (existing) {
+           if (existingConflict) {
              throw new Error('This time slot is already booked for the selected doctor.');
            }
         }
 
-        eventStoreService.saveEvent('AppointmentUpdated', 'appointments', id, body, getVersion(id, body.expectedVersion), token || 'local_admin_1');
-        return { data: { appointment: { _id: id, ...body } } };
+        eventStoreService.saveEvent('AppointmentUpdated', 'appointments', id, updatedBody, getVersion(id, body.expectedVersion), token || 'local_admin_1');
+        return { data: { appointment: { _id: id, ...updatedBody } } };
       }
       if (endpoint.startsWith('/appointments/') && method === 'DELETE') {
         const id = endpoint.split('/')[2];
