@@ -74,10 +74,11 @@ export default function AppointmentsList() {
       in_consultation: 'bg-purple-100 text-purple-800',
       completed: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800',
+      waitlisted: 'bg-orange-100 text-orange-800 border border-orange-200 shadow-sm',
     };
     return (
-      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${styles[status]}`}>
-        {status.replace('_', ' ').toUpperCase()}
+      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status === 'waitlisted' ? '⚠️ WAITLISTED' : status.replace('_', ' ').toUpperCase()}
       </span>
     );
   };

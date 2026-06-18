@@ -41,7 +41,8 @@ class EventStoreService {
       entity_id: entityId,
       payload: JSON.stringify(payload),
       version: currentVersion + 1, // Phase 8: Increment version
-      synced: 0
+      synced: 0,
+      created_at: new Date().toISOString()
     };
 
     console.log(`[EventStoreService] Saving event: ${eventType} for ${entityType} ${entityId}`);
@@ -50,9 +51,9 @@ class EventStoreService {
     const transaction = db.transaction(() => {
       // 1. Insert into events table
       db.prepare(`
-        INSERT INTO events (id, node_id, event_type, entity_type, entity_id, payload, version, synced)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(event.id, event.node_id, event.event_type, event.entity_type, event.entity_id, event.payload, event.version, event.synced);
+        INSERT INTO events (id, node_id, event_type, entity_type, entity_id, payload, version, synced, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(event.id, event.node_id, event.event_type, event.entity_type, event.entity_id, event.payload, event.version, event.synced, event.created_at);
       
       // 2. Immediately apply it to the local schema
       this.applyRemoteEvent(event);
@@ -215,15 +216,40 @@ class EventStoreService {
         db.prepare(`UPDATE users SET is_deleted=1, deleted_at=CURRENT_TIMESTAMP WHERE id=?`).run(event.entity_id);
         break;
 
-      case 'AppointmentCreated':
+      case 'AppointmentCreated': {
+        let finalStatus = payload.status || 'scheduled';
+        
+        // Conflict Check (Winner-Takes-All algorithm)
+        const conflict = db.prepare(`
+          SELECT id, created_at FROM appointments 
+          WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? 
+          AND status NOT IN ('cancelled', 'waitlisted')
+        `).get(payload.doctorId, payload.appointmentDate, payload.appointmentTime);
+
+        if (conflict) {
+           const incomingTime = new Date(event.created_at || Date.now()).getTime();
+           const existingTime = new Date(conflict.created_at || Date.now()).getTime();
+
+           if (incomingTime < existingTime) {
+              // Incoming wins! Waitlist the existing one.
+              db.prepare("UPDATE appointments SET status = 'waitlisted' WHERE id = ?").run(conflict.id);
+              console.log(`[Conflict Resolution] Incoming appointment ${event.entity_id} won. Existing appointment ${conflict.id} waitlisted.`);
+           } else {
+              // Existing wins! Waitlist the incoming one.
+              finalStatus = 'waitlisted';
+              console.log(`[Conflict Resolution] Existing appointment ${conflict.id} won. Incoming appointment ${event.entity_id} waitlisted.`);
+           }
+        }
+
         db.prepare(`
-          INSERT INTO appointments (id, patient_id, doctor_id, appointment_date, appointment_time, status, reason)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO appointments (id, patient_id, doctor_id, appointment_date, appointment_time, status, reason, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
           event.entity_id, payload.patientId, payload.doctorId, payload.appointmentDate, 
-          payload.appointmentTime, payload.status || 'scheduled', payload.reason || ''
+          payload.appointmentTime, finalStatus, payload.reason || '', event.created_at || new Date().toISOString()
         );
         break;
+      }
       case 'AppointmentUpdated':
         db.prepare(`
           UPDATE appointments SET status=?, reason=?, appointment_date=?, appointment_time=?

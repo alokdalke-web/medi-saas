@@ -76,9 +76,10 @@ function DoctorDashboard({ stats }) {
               </div>
               <div>
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  apt.status === 'waitlisted' ? 'bg-orange-100 text-orange-800 border border-orange-200' :
                   apt.status === 'checked_in' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
                 }`}>
-                  {apt.status === 'checked_in' ? 'Waiting outside' : 'Scheduled'}
+                  {apt.status === 'waitlisted' ? '⚠️ WAITLISTED' : apt.status === 'checked_in' ? 'Waiting outside' : 'Scheduled'}
                 </span>
               </div>
             </li>
@@ -132,12 +133,13 @@ function ReceptionistDashboard({ stats, refresh }) {
               </div>
               <div className="flex items-center space-x-4">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  apt.status === 'waitlisted' ? 'bg-orange-100 text-orange-800 border border-orange-200' :
                   apt.status === 'checked_in' ? 'bg-yellow-100 text-yellow-800' : 
                   apt.status === 'in_consultation' ? 'bg-purple-100 text-purple-800' :
                   apt.status === 'completed' ? 'bg-green-100 text-green-800' :
                   'bg-blue-100 text-blue-800'
                 }`}>
-                  {apt.status.replace('_', ' ').toUpperCase()}
+                  {apt.status === 'waitlisted' ? '⚠️ WAITLISTED' : apt.status.replace('_', ' ').toUpperCase()}
                 </span>
                 
                 {apt.status === 'scheduled' && (
