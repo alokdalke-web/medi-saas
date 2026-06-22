@@ -131,6 +131,8 @@ class DatabaseService {
         started_at DATETIME,
         completed_at DATETIME,
         created_by TEXT,
+        logical_clock INTEGER DEFAULT 0,
+        node_id TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (clinic_id) REFERENCES clinics(id),
@@ -148,6 +150,7 @@ class DatabaseService {
         entity_id TEXT,
         payload TEXT,
         version INTEGER,
+        logical_clock INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         synced INTEGER DEFAULT 0,
         cloud_synced INTEGER DEFAULT 0
@@ -174,9 +177,16 @@ class DatabaseService {
     // Schema Migrations
     try {
       this.db.exec(`ALTER TABLE events ADD COLUMN cloud_synced INTEGER DEFAULT 0;`);
-    } catch(e) {
-      // Column already exists
-    }
+    } catch(e) { /* Column already exists */ }
+    
+    try {
+      this.db.exec(`ALTER TABLE events ADD COLUMN logical_clock INTEGER DEFAULT 0;`);
+    } catch(e) { /* Column already exists */ }
+    
+    try {
+      this.db.exec(`ALTER TABLE appointments ADD COLUMN logical_clock INTEGER DEFAULT 0;`);
+      this.db.exec(`ALTER TABLE appointments ADD COLUMN node_id TEXT;`);
+    } catch(e) { /* Column already exists */ }
 
     console.log("[DatabaseService] Schema initialized successfully");
   }

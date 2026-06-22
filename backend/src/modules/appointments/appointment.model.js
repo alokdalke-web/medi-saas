@@ -1,19 +1,21 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 const appointmentSchema = new mongoose.Schema(
   {
+    _id: { type: String, default: () => crypto.randomUUID() },
     clinicId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Clinic',
       required: true,
     },
     patientId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Patient',
       required: [true, 'Appointment must belong to a patient'],
     },
     doctorId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Doctor',
       required: [true, 'Appointment must be assigned to a doctor'],
     },
@@ -41,7 +43,7 @@ const appointmentSchema = new mongoose.Schema(
     startedAt: { type: Date },
     completedAt: { type: Date },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'User',
     },
   },

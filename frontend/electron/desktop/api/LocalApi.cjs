@@ -396,14 +396,62 @@ class LocalApi {
         return []; // Return empty array so frontend sync queue doesn't crash
       }
 
-      // 5. Dashboard stub
+      // 5. Dashboard Real Data
       if (endpoint === '/dashboard' && method === 'GET') {
+        const totalPatients = db.prepare('SELECT COUNT(*) as c FROM patients WHERE is_deleted = 0').get().c;
+        const totalDoctors = db.prepare('SELECT COUNT(*) as c FROM doctors WHERE is_deleted = 0').get().c;
+        const totalAppointments = db.prepare("SELECT COUNT(*) as c FROM appointments WHERE status != 'cancelled'").get().c;
+        
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todaysAppointments = db.prepare("SELECT COUNT(*) as c FROM appointments WHERE appointment_date = ? AND status != 'cancelled'").get(todayStr).c;
+        
+        const recentApts = db.prepare(`
+          SELECT a.id as _id, a.appointment_date as appointmentDate, a.appointment_time as appointmentTime, a.status,
+                 p.first_name, p.last_name, d.name as doctor_name
+          FROM appointments a
+          LEFT JOIN patients p ON a.patient_id = p.id
+          LEFT JOIN doctors d ON a.doctor_id = d.id
+          ORDER BY a.created_at DESC LIMIT 5
+        `).all();
+        
+        const mappedRecent = recentApts.map(a => ({
+          _id: a._id,
+          appointmentDate: a.appointmentDate,
+          appointmentTime: a.appointmentTime,
+          status: a.status,
+          patientId: { firstName: a.first_name, lastName: a.last_name },
+          doctorId: { name: a.doctor_name }
+        }));
+        
+        const upcomingApts = db.prepare(`
+          SELECT a.id as _id, a.appointment_date as appointmentDate, a.appointment_time as appointmentTime, a.status,
+                 p.first_name, p.last_name, d.name as doctor_name
+          FROM appointments a
+          LEFT JOIN patients p ON a.patient_id = p.id
+          LEFT JOIN doctors d ON a.doctor_id = d.id
+          WHERE a.appointment_date >= ? AND a.status IN ('scheduled', 'checked_in', 'waitlisted')
+          ORDER BY a.appointment_date ASC, a.appointment_time ASC LIMIT 10
+        `).all(todayStr);
+
+        const mappedUpcoming = upcomingApts.map(a => ({
+          _id: a._id,
+          appointmentDate: a.appointmentDate,
+          appointmentTime: a.appointmentTime,
+          status: a.status,
+          patientId: { firstName: a.first_name, lastName: a.last_name },
+          doctorId: { name: a.doctor_name }
+        }));
+
         return {
           success: true,
           data: {
-            stats: { totalPatients: 0, appointmentsToday: 0, totalRevenue: 0 },
-            recentAppointments: [],
-            upcomingAppointments: []
+            totalPatients, 
+            totalDoctors, 
+            totalAppointments, 
+            todaysAppointments,
+            totalRevenue: 0,
+            recentAppointments: mappedRecent,
+            upcomingAppointments: mappedUpcoming
           }
         };
       }

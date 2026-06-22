@@ -14,7 +14,16 @@ class EventStoreService {
    */
   initialize(nodeId) {
     this.nodeId = nodeId;
-    console.log(`[EventStoreService] Initialized with Node ID: ${this.nodeId}`);
+    const db = dbService.getDb();
+    
+    try {
+      const result = db.prepare('SELECT MAX(logical_clock) as maxClock FROM events').get();
+      this.currentClock = result?.maxClock || 0;
+    } catch(e) {
+      this.currentClock = 0;
+    }
+    
+    console.log(`[EventStoreService] Initialized with Node ID: ${this.nodeId}, Logical Clock: ${this.currentClock}`);
   }
 
   /**
@@ -33,6 +42,9 @@ class EventStoreService {
       throw new Error(`Conflict Detected: Expected version ${expectedVersion}, but found ${currentVersion}`);
     }
     
+    // Lamport Clock: Increment on local write
+    this.currentClock += 1;
+    
     const event = {
       id: eventId,
       node_id: this.nodeId,
@@ -41,19 +53,20 @@ class EventStoreService {
       entity_id: entityId,
       payload: JSON.stringify(payload),
       version: currentVersion + 1, // Phase 8: Increment version
+      logical_clock: this.currentClock,
       synced: 0,
       created_at: new Date().toISOString()
     };
 
-    console.log(`[EventStoreService] Saving event: ${eventType} for ${entityType} ${entityId}`);
+    console.log(`[EventStoreService] Saving event: ${eventType} for ${entityType} ${entityId} (Clock: ${this.currentClock})`);
     
     // Start a transaction so either both the event and the entity are saved, or neither.
     const transaction = db.transaction(() => {
       // 1. Insert into events table
       db.prepare(`
-        INSERT INTO events (id, node_id, event_type, entity_type, entity_id, payload, version, synced, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(event.id, event.node_id, event.event_type, event.entity_type, event.entity_id, event.payload, event.version, event.synced, event.created_at);
+        INSERT INTO events (id, node_id, event_type, entity_type, entity_id, payload, version, logical_clock, synced, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(event.id, event.node_id, event.event_type, event.entity_type, event.entity_id, event.payload, event.version, event.logical_clock, event.synced, event.created_at);
       
       // 2. Immediately apply it to the local schema
       this.applyRemoteEvent(event);
@@ -81,11 +94,14 @@ class EventStoreService {
 
     console.log(`[EventStoreService] Saving incoming remote event: ${event.event_type} (${event.id})`);
     
+    // Lamport Clock: Fast-forward on remote write
+    this.currentClock = Math.max(this.currentClock, event.logical_clock || 0) + 1;
+    
     const transaction = db.transaction(() => {
       // Insert into local events table
       db.prepare(`
-        INSERT INTO events (id, node_id, event_type, entity_type, entity_id, payload, version, synced, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO events (id, node_id, event_type, entity_type, entity_id, payload, version, logical_clock, synced, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         event.id, 
         event.node_id, 
@@ -94,6 +110,7 @@ class EventStoreService {
         event.entity_id, 
         event.payload, 
         event.version, 
+        event.logical_clock || 0,
         1, // Mark as synced since it came from another node
         event.created_at
       );
@@ -219,34 +236,46 @@ class EventStoreService {
       case 'AppointmentCreated': {
         let finalStatus = payload.status || 'scheduled';
         
-        // Conflict Check (Winner-Takes-All algorithm)
+        // Conflict Check (Winner-Takes-All algorithm using Logical Clocks)
         const conflict = db.prepare(`
-          SELECT id, created_at FROM appointments 
+          SELECT id, logical_clock, node_id FROM appointments 
           WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? 
           AND status NOT IN ('cancelled', 'waitlisted')
         `).get(payload.doctorId, payload.appointmentDate, payload.appointmentTime);
 
         if (conflict) {
-           const incomingTime = new Date(event.created_at || Date.now()).getTime();
-           const existingTime = new Date(conflict.created_at || Date.now()).getTime();
+           const incomingClock = event.logical_clock || 0;
+           const existingClock = conflict.logical_clock || 0;
+           
+           let incomingWins = false;
 
-           if (incomingTime < existingTime) {
+           if (incomingClock < existingClock) {
+              // Rule 1: Lower clock means it happened earlier
+              incomingWins = true;
+           } else if (incomingClock === existingClock) {
+              // Rule 2 (Tie-Breaker): Compare Node IDs alphabetically
+              if (event.node_id < conflict.node_id) {
+                 incomingWins = true;
+              }
+           }
+
+           if (incomingWins) {
               // Incoming wins! Waitlist the existing one.
               db.prepare("UPDATE appointments SET status = 'waitlisted' WHERE id = ?").run(conflict.id);
-              console.log(`[Conflict Resolution] Incoming appointment ${event.entity_id} won. Existing appointment ${conflict.id} waitlisted.`);
+              console.log(`[Conflict Resolution] Incoming appointment ${event.entity_id} won (Clock: ${incomingClock}). Existing appointment ${conflict.id} waitlisted.`);
            } else {
               // Existing wins! Waitlist the incoming one.
               finalStatus = 'waitlisted';
-              console.log(`[Conflict Resolution] Existing appointment ${conflict.id} won. Incoming appointment ${event.entity_id} waitlisted.`);
+              console.log(`[Conflict Resolution] Existing appointment ${conflict.id} won (Clock: ${existingClock}). Incoming appointment ${event.entity_id} waitlisted.`);
            }
         }
 
         db.prepare(`
-          INSERT INTO appointments (id, patient_id, doctor_id, appointment_date, appointment_time, status, reason, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO appointments (id, patient_id, doctor_id, appointment_date, appointment_time, status, reason, logical_clock, node_id, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
           event.entity_id, payload.patientId, payload.doctorId, payload.appointmentDate, 
-          payload.appointmentTime, finalStatus, payload.reason || '', event.created_at || new Date().toISOString()
+          payload.appointmentTime, finalStatus, payload.reason || '', event.logical_clock || 0, event.node_id, event.created_at || new Date().toISOString()
         );
         break;
       }

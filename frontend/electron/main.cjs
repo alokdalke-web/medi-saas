@@ -32,10 +32,12 @@ function createWindow() {
   // Check if we have a DEV_URL to load from Vite server
   if (process.env.VITE_DEV_SERVER_URL || isDev) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173');
-    win.webContents.openDevTools();
   } else {
     win.loadFile(path.join(__dirname, '../dist/index.html'));
   }
+
+  // Always enable inspect mode (DevTools)
+  win.webContents.openDevTools();
 
   // Intercept frontend console logs and print them to the terminal
   win.webContents.on('console-message', (event, level, message, line, sourceId) => {

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ConnectionProvider } from "./context/ConnectionContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -17,7 +17,7 @@ function App() {
   return (
     <AuthProvider>
       <ConnectionProvider>
-        <BrowserRouter>
+        <HashRouter>
           <Routes>
             {/* Public Auth Routes */}
             <Route element={<AuthLayout />}>
@@ -45,7 +45,7 @@ function App() {
               </Route>
             </Route>
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </ConnectionProvider>
     </AuthProvider>
   );

@@ -55,10 +55,15 @@ exports.createAppointment = async (req, res, next) => {
       }
     }
 
+    const startOfDay = new Date(dateObj);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(dateObj);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
     const existingAppointment = await Appointment.findOne({
       clinicId: req.clinicId,
       doctorId,
-      appointmentDate: dateObj,
+      appointmentDate: { $gte: startOfDay, $lte: endOfDay },
       appointmentTime,
       status: { $ne: 'cancelled' }
     });
@@ -78,6 +83,7 @@ exports.createAppointment = async (req, res, next) => {
       createdBy: req.user._id
     });
 
+    if (req.app.get('io')) req.app.get('io').emit('data_changed');
     res.status(201).json({
       success: true,
       data: { appointment: newAppointment }
@@ -109,6 +115,7 @@ exports.updateAppointment = async (req, res, next) => {
       return next(new AppError('No appointment found with that ID', 404));
     }
 
+    if (req.app.get('io')) req.app.get('io').emit('data_changed');
     res.status(200).json({
       success: true,
       data: { appointment }
@@ -120,17 +127,14 @@ exports.updateAppointment = async (req, res, next) => {
 
 exports.deleteAppointment = async (req, res, next) => {
   try {
-    const appointment = await Appointment.findOneAndUpdate(
-      { _id: req.params.id, clinicId: req.clinicId },
-      { status: 'cancelled' },
-      { new: true }
-    );
+    const appointment = await Appointment.findOneAndDelete({ _id: req.params.id, clinicId: req.clinicId });
 
     if (!appointment) {
       return next(new AppError('No appointment found with that ID', 404));
     }
 
-    res.status(204).json({
+    if (req.app.get('io')) req.app.get('io').emit('data_changed');
+    res.status(200).json({
       success: true,
       data: null
     });

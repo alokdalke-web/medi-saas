@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 const clinicSchema = new mongoose.Schema(
   {
+    _id: { type: String, default: () => crypto.randomUUID() },
     name: {
       type: String,
       required: [true, 'Clinic name is required'],

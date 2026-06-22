@@ -60,6 +60,7 @@ exports.createDoctor = async (req, res, next) => {
 
     // Create the Doctor Profile
     const newDoctor = await Doctor.create({
+      ...(req.body._id && { _id: req.body._id }),
       clinicId: req.clinicId,
       userId: newUser._id,
       doctorCode,
@@ -72,6 +73,7 @@ exports.createDoctor = async (req, res, next) => {
       availability
     });
 
+    if (req.app.get('io')) req.app.get('io').emit('data_changed');
     res.status(201).json({
       success: true,
       data: { doctor: newDoctor }
@@ -104,6 +106,7 @@ exports.updateDoctor = async (req, res, next) => {
       });
     }
 
+    if (req.app.get('io')) req.app.get('io').emit('data_changed');
     res.status(200).json({
       success: true,
       data: { doctor }
@@ -115,22 +118,21 @@ exports.updateDoctor = async (req, res, next) => {
 
 exports.deleteDoctor = async (req, res, next) => {
   try {
-    const doctor = await Doctor.findOneAndUpdate(
-      { _id: req.params.id, clinicId: req.clinicId },
-      { isDeleted: true, deletedAt: new Date(), isActive: false },
-      { new: true }
-    );
+    const doctor = await Doctor.findOneAndDelete({ _id: req.params.id, clinicId: req.clinicId });
 
     if (!doctor) {
       return next(new AppError('No doctor found with that ID in this clinic', 404));
     }
 
-    // Soft delete the associated user as well
-    await User.findByIdAndUpdate(doctor.userId, {
-      isDeleted: true, deletedAt: new Date(), isActive: false
-    });
+    // Hard delete the associated user as well
+    await User.findByIdAndDelete(doctor.userId);
 
-    res.status(204).json({
+    // Cascade delete appointments
+    const Appointment = require('../appointments/appointment.model');
+    await Appointment.deleteMany({ doctorId: doctor._id });
+
+    if (req.app.get('io')) req.app.get('io').emit('data_changed');
+    res.status(200).json({
       success: true,
       data: null
     });

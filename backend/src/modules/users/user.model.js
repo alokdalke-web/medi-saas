@@ -1,10 +1,12 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema(
   {
+    _id: { type: String, default: () => crypto.randomUUID() },
     clinicId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Clinic',
       required: [true, 'User must belong to a clinic'],
     },

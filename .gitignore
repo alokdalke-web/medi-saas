@@ -1,0 +1,8 @@
+frontend.zip
+*.exe
+frontend.zip
+*.exe
+releases/
+frontend/dist/
+node_modules/
+.env

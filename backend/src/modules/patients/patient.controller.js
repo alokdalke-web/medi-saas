@@ -54,6 +54,7 @@ exports.createPatient = async (req, res, next) => {
       createdBy: req.user._id
     });
 
+    if (req.app.get('io')) req.app.get('io').emit('data_changed');
     res.status(201).json({
       success: true,
       data: { patient: newPatient }
@@ -75,6 +76,7 @@ exports.updatePatient = async (req, res, next) => {
       return next(new AppError('No patient found with that ID', 404));
     }
 
+    if (req.app.get('io')) req.app.get('io').emit('data_changed');
     res.status(200).json({
       success: true,
       data: { patient }
@@ -86,17 +88,18 @@ exports.updatePatient = async (req, res, next) => {
 
 exports.deletePatient = async (req, res, next) => {
   try {
-    const patient = await Patient.findOneAndUpdate(
-      { _id: req.params.id, clinicId: req.clinicId },
-      { isDeleted: true, deletedAt: new Date() },
-      { new: true }
-    );
+    const patient = await Patient.findOneAndDelete({ _id: req.params.id, clinicId: req.clinicId });
 
     if (!patient) {
-      return next(new AppError('No patient found with that ID', 404));
+      return next(new AppError('No patient found with that ID in this clinic', 404));
     }
 
-    res.status(204).json({
+    // Cascade delete appointments
+    const Appointment = require('../appointments/appointment.model');
+    await Appointment.deleteMany({ patientId: patient._id });
+
+    if (req.app.get('io')) req.app.get('io').emit('data_changed');
+    res.status(200).json({
       success: true,
       data: null
     });
