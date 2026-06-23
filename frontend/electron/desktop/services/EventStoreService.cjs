@@ -1,36 +1,33 @@
 const dbService = require('../database/DatabaseService.cjs');
 const ipcNotifier = require('../api/IpcNotifier.cjs');
-const auditService = require('./AuditService.cjs');
 const crypto = require('crypto');
 
-class EventStoreService {
-  constructor() {
-    this.nodeId = 'PENDING_NODE_ID'; // Will be loaded from config in Phase 3
-  }
+let nodeId = 'PENDING_NODE_ID';
+let currentClock = 0;
 
-  /**
-   * Initializes the event store service.
-   * @param {string} nodeId - The unique identity of this node.
-   */
-  initialize(nodeId) {
-    this.nodeId = nodeId;
-    const db = dbService.getDb();
+/**
+ * Initializes the event store service.
+ * @param {string} id - The unique identity of this node.
+ */
+function initialize(id) {
+  nodeId = id;
+  const db = dbService.getDb();
     
     try {
-      const result = db.prepare('SELECT MAX(logical_clock) as maxClock FROM events').get();
-      this.currentClock = result?.maxClock || 0;
-    } catch(e) {
-      this.currentClock = 0;
-    }
-    
-    console.log(`[EventStoreService] Initialized with Node ID: ${this.nodeId}, Logical Clock: ${this.currentClock}`);
+    const result = db.prepare('SELECT MAX(logical_clock) as maxClock FROM events').get();
+    currentClock = result?.maxClock || 0;
+  } catch(e) {
+    currentClock = 0;
   }
+  
+  console.log(`[EventStoreService] Initialized with Node ID: ${nodeId}, Logical Clock: ${currentClock}`);
+}
 
-  /**
-   * Phase 2, 8 & 9: Saves an event to the local database and immediately applies it.
-   * Includes OCC validation and automatically generates an audit log.
-   */
-  saveEvent(eventType, entityType, entityId, payload, expectedVersion = 0, userId = null) {
+/**
+ * Phase 2, 8 & 9: Saves an event to the local database and immediately applies it.
+ * Includes OCC validation and automatically generates an audit log.
+ */
+function saveEvent(eventType, entityType, entityId, payload, expectedVersion = 0, userId = null) {
     const db = dbService.getDb();
     const eventId = crypto.randomUUID();
     
@@ -42,23 +39,23 @@ class EventStoreService {
       throw new Error(`Conflict Detected: Expected version ${expectedVersion}, but found ${currentVersion}`);
     }
     
-    // Lamport Clock: Increment on local write
-    this.currentClock += 1;
-    
-    const event = {
-      id: eventId,
-      node_id: this.nodeId,
-      event_type: eventType,
-      entity_type: entityType,
-      entity_id: entityId,
-      payload: JSON.stringify(payload),
-      version: currentVersion + 1, // Phase 8: Increment version
-      logical_clock: this.currentClock,
-      synced: 0,
-      created_at: new Date().toISOString()
-    };
+  // Lamport Clock: Increment on local write
+  currentClock += 1;
+  
+  const event = {
+    id: eventId,
+    node_id: nodeId,
+    event_type: eventType,
+    entity_type: entityType,
+    entity_id: entityId,
+    payload: JSON.stringify(payload),
+    version: currentVersion + 1, // Phase 8: Increment version
+    logical_clock: currentClock,
+    synced: 0,
+    created_at: new Date().toISOString()
+  };
 
-    console.log(`[EventStoreService] Saving event: ${eventType} for ${entityType} ${entityId} (Clock: ${this.currentClock})`);
+  console.log(`[EventStoreService] Saving event: ${eventType} for ${entityType} ${entityId} (Clock: ${currentClock})`);
     
     // Start a transaction so either both the event and the entity are saved, or neither.
     const transaction = db.transaction(() => {
@@ -68,11 +65,8 @@ class EventStoreService {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(event.id, event.node_id, event.event_type, event.entity_type, event.entity_id, event.payload, event.version, event.logical_clock, event.synced, event.created_at);
       
-      // 2. Immediately apply it to the local schema
-      this.applyRemoteEvent(event);
-      
-      // Phase 9: Record Audit Log
-      auditService.logAction(userId || 'system', eventType, `${entityType}:${entityId}`);
+    // 2. Immediately apply it to the local schema
+    applyRemoteEvent(event);
     });
 
     transaction();
@@ -80,10 +74,10 @@ class EventStoreService {
     return eventId;
   }
 
-  /**
-   * Phase 4: Saves an event received from a remote peer and applies it if it's new.
-   */
-  saveRemoteEvent(event) {
+/**
+ * Phase 4: Saves an event received from a remote peer and applies it if it's new.
+ */
+function saveRemoteEvent(event) {
     const db = dbService.getDb();
     
     // Check if we already have this event
@@ -92,10 +86,10 @@ class EventStoreService {
       return; // Already processed
     }
 
-    console.log(`[EventStoreService] Saving incoming remote event: ${event.event_type} (${event.id})`);
-    
-    // Lamport Clock: Fast-forward on remote write
-    this.currentClock = Math.max(this.currentClock, event.logical_clock || 0) + 1;
+  console.log(`[EventStoreService] Saving incoming remote event: ${event.event_type} (${event.id})`);
+  
+  // Lamport Clock: Fast-forward on remote write
+  currentClock = Math.max(currentClock, event.logical_clock || 0) + 1;
     
     const transaction = db.transaction(() => {
       // Insert into local events table
@@ -115,11 +109,8 @@ class EventStoreService {
         event.created_at
       );
       
-      // Apply the actual data change
-      this.applyRemoteEvent(event);
-      
-      // Phase 9: Record Audit Log for incoming sync
-      auditService.logAction('system', `Synced ${event.event_type}`, `${event.entity_type}:${event.entity_id}`);
+    // Apply the actual data change
+    applyRemoteEvent(event);
     });
 
     transaction();
@@ -131,10 +122,10 @@ class EventStoreService {
     });
   }
 
-  /**
-   * Phase 2: Applies an event to the local tables. Used both for local writes and incoming remote events.
-   */
-  applyRemoteEvent(event) {
+/**
+ * Phase 2: Applies an event to the local tables. Used both for local writes and incoming remote events.
+ */
+function applyRemoteEvent(event) {
     const db = dbService.getDb();
     const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
 
@@ -288,14 +279,17 @@ class EventStoreService {
         );
         break;
       case 'AppointmentDeleted':
-        db.prepare(`DELETE FROM appointments WHERE id=?`).run(event.entity_id);
+        db.prepare(`UPDATE appointments SET is_deleted=1, updated_at=CURRENT_TIMESTAMP WHERE id=?`).run(event.entity_id);
         break;
       
-      default:
-        console.warn(`[EventStoreService] Unknown event_type: ${event.event_type}`);
-    }
+    default:
+      console.warn(`[EventStoreService] Unknown event_type: ${event.event_type}`);
   }
 }
 
-// Export as a singleton
-module.exports = new EventStoreService();
+module.exports = {
+  initialize,
+  saveEvent,
+  saveRemoteEvent,
+  applyRemoteEvent
+};

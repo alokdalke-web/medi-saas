@@ -48,9 +48,8 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
       }
       return { success: false, message: 'Invalid response' };
-      return { success: false, message: data.message };
     } catch (e) {
-      return { success: false, message: 'Server unreachable' };
+      return { success: false, message: e.message || 'Server unreachable' };
     }
   };
 

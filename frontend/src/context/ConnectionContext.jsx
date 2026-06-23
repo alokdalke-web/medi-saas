@@ -7,6 +7,8 @@ export function ConnectionProvider({ children }) {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [activeEndpoint, setActiveEndpoint] = useState('local');
+  const [syncTimestamp, setSyncTimestamp] = useState(Date.now());
   const checkPending = async () => {
     if (!localStorage.getItem('token')) return;
     try {
@@ -48,6 +50,7 @@ export function ConnectionProvider({ children }) {
     if (window.electronAPI && window.electronAPI.onSyncUpdate) {
       window.electronAPI.onSyncUpdate((payload) => {
         console.log('[React] Received real-time P2P sync update:', payload);
+        setSyncTimestamp(Date.now());
         
         // Broadcast a standard DOM event so any mounted React component can re-fetch its data
         window.dispatchEvent(new CustomEvent('p2p-sync-update', { detail: payload }));
@@ -77,7 +80,7 @@ export function ConnectionProvider({ children }) {
   }, []);
 
   return (
-    <ConnectionContext.Provider value={{ isOnline, isSyncing, pendingCount, flushSyncQueue }}>
+    <ConnectionContext.Provider value={{ isOnline, isSyncing, pendingCount, flushSyncQueue, activeEndpoint, syncTimestamp }}>
       {children}
     </ConnectionContext.Provider>
   );

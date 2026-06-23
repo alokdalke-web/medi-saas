@@ -8,10 +8,8 @@ const eventStoreService = require('./desktop/services/EventStoreService.cjs');
 const discoveryService = require('./desktop/discovery/DiscoveryService.cjs');
 const syncService = require('./desktop/sync/SyncService.cjs');
 const cloudSyncService = require('./desktop/services/CloudSyncService.cjs');
-const auditService = require('./desktop/services/AuditService.cjs');
 const localApi = require('./desktop/api/LocalApi.cjs');
 const peerApi = require('./desktop/api/PeerApi.cjs');
-const dataMigrationTool = require('./desktop/tools/DataMigrationTool.cjs');
 
 // Determine if we are in development mode based on whether the app is packaged
 // or by explicitly checking for an environment variable if provided by concurrently.
@@ -54,12 +52,6 @@ app.whenReady().then(() => {
     nodeIdentityService.initialize();
     const nodeId = nodeIdentityService.getNodeId();
     
-    // Phase 11: Migrate Legacy Data
-    dataMigrationTool.runMigration(nodeId);
-    
-    // TEMPORARY: Reset cloud sync status to push all historic events to the new backend
-    dbService.getDb().prepare('UPDATE events SET cloud_synced = 0').run();
-
     eventStoreService.initialize(nodeId);
     syncService.initialize();
     
@@ -67,7 +59,6 @@ app.whenReady().then(() => {
     peerApi.initialize();
     syncService.startPolling();
     discoveryService.initialize();
-    auditService.initialize(nodeId);
     // 5. Start Background Cloud Sync
     cloudSyncService.start();
 

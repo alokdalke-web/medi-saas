@@ -109,9 +109,9 @@ function ReceptionistDashboard({ stats, refresh }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-3">
-        <StatCard title="Total Today" value={stats.totalToday || 0} icon={CalendarIcon} colorClass="bg-blue-500" />
-        <StatCard title="Checked In" value={stats.checkedInToday || 0} icon={CheckCircleIcon} colorClass="bg-green-500" />
-        <StatCard title="Scheduled" value={stats.scheduledToday || 0} icon={ClockIcon} colorClass="bg-amber-500" />
+        <StatCard title="Total Today" value={stats.todaysAppointments || 0} icon={CalendarIcon} colorClass="bg-blue-500" />
+        <StatCard title="Checked In" value={stats.recentAppointments?.filter(a => a.status === 'checked_in').length || 0} icon={CheckCircleIcon} colorClass="bg-green-500" />
+        <StatCard title="Scheduled" value={stats.recentAppointments?.filter(a => a.status === 'scheduled').length || 0} icon={ClockIcon} colorClass="bg-amber-500" />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
@@ -170,7 +170,6 @@ export default function Dashboard() {
 
   const fetchStats = async () => {
     try {
-      setLoading(true);
       const res = await fetchApi('/dashboard');
       setStats(res.data);
     } catch (err) {

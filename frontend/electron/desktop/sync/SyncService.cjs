@@ -2,33 +2,30 @@ const discoveryService = require('../discovery/DiscoveryService.cjs');
 const eventStoreService = require('../services/EventStoreService.cjs');
 const dbService = require('../database/DatabaseService.cjs');
 
-class SyncService {
-  constructor() {
-    this.isOnline = false;
-    this.peers = new Map();
-    this.pollInterval = null;
-  }
+let isOnline = false;
+let peers = new Map();
+let pollInterval = null;
 
-  /**
-   * Initializes the sync service.
-   */
-  initialize() {
+/**
+ * Initializes the sync service.
+ */
+function initialize() {
     console.log(`[SyncService] Initialized.`);
   }
 
   /**
    * Phase 4: Start background polling for events
    */
-  startPolling() {
-    if (this.pollInterval) return;
+function startPolling() {
+  if (pollInterval) return;
     
     console.log(`[SyncService] Starting P2P polling loop (every 10s)...`);
-    this.pollInterval = setInterval(() => {
+  pollInterval = setInterval(() => {
       // Phase 5: Fetch dynamically discovered peers from UDP broadcast
       const peers = discoveryService.getDiscoveredPeers();
       
       for (const peer of peers) {
-        this.pollPeer(peer.ip);
+      pollPeer(peer.ip);
       }
     }, 10000);
   }
@@ -36,7 +33,7 @@ class SyncService {
   /**
    * Phase 4 & 7: Fetch events from a specific peer
    */
-  async pollPeer(peerIp) {
+async function pollPeer(peerIp) {
     const db = dbService.getDb();
     
     // Phase 7: Fetch persistent sync state from SQLite
@@ -71,26 +68,15 @@ class SyncService {
   }
 
   /**
-   * Stub for Phase 6: Broadcast an event to all connected peers.
-   */
-  broadcastEvent(event) {
-    console.log(`[SyncService] (Stub) Broadcasting event: ${event.id} to peers.`);
-  }
-
-  /**
-   * Stub for Phase 6: Handle an incoming event from a peer.
-   */
-  handleIncomingEvent(peerId, event) {
-    console.log(`[SyncService] (Stub) Received event: ${event.id} from peer: ${peerId}`);
-  }
-
-  /**
    * Stub for Phase 7: Sync missing events when a peer reconnects.
    */
-  syncWithPeer(peerId) {
-    console.log(`[SyncService] (Stub) Starting sync with peer: ${peerId}`);
-  }
+function syncWithPeer(peerId) {
+  console.log(`[SyncService] (Stub) Starting sync with peer: ${peerId}`);
 }
 
-// Export as a singleton
-module.exports = new SyncService();
+module.exports = {
+  initialize,
+  startPolling,
+  pollPeer,
+  syncWithPeer
+};

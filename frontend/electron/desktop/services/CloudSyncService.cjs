@@ -5,46 +5,43 @@ const { app } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-class CloudSyncService {
-  constructor() {
-    this.intervalId = null;
-    this.syncStateFile = path.join(app.getPath('userData'), 'cloud_sync_state.json');
-  }
+let intervalId = null;
+const syncStateFile = path.join(app.getPath('userData'), 'cloud_sync_state.json');
 
-  getCloudApiUrl() {
+function getCloudApiUrl() {
     const nodeIdentityService = require('./NodeIdentityService.cjs');
     return nodeIdentityService.getCloudUrl() || process.env.CLOUD_API_URL || 'http://localhost:5000/api/v1/sync';
   }
 
-  start() {
-    console.log('[CloudSync] Starting background sync to cloud...');
-    // Sync every 10 seconds
-    this.intervalId = setInterval(() => {
-      this.performSync();
-    }, 10000);
-    
-    // Do an immediate sync on startup
-    this.performSync();
-  }
+function start() {
+  console.log('[CloudSync] Starting background sync to cloud...');
+  // Sync every 10 seconds
+  intervalId = setInterval(() => {
+    performSync();
+  }, 10000);
+  
+  // Do an immediate sync on startup
+  performSync();
+}
 
-  stop() {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-    }
+function stop() {
+  if (intervalId) {
+    clearInterval(intervalId);
+    intervalId = null;
   }
+}
 
-  async performSync() {
-    try {
-      await this.pushEvents();
-      await this.pullEvents();
+async function performSync() {
+  try {
+    await pushEvents();
+    await pullEvents();
     } catch (err) {
       console.error('[CloudSync] Sync failed:', err.message);
     }
   }
 
-  async pushEvents() {
-    const db = databaseService.getDb();
+async function pushEvents() {
+  const db = databaseService.getDb();
     
     // Get all events that haven't been synced to the cloud yet
     const pendingEvents = db.prepare('SELECT * FROM events WHERE cloud_synced = 0 ORDER BY created_at ASC').all();
@@ -53,9 +50,9 @@ class CloudSyncService {
 
     console.log(`[CloudSync] Pushing ${pendingEvents.length} events to cloud...`);
 
-    try {
-      const apiUrl = this.getCloudApiUrl();
-      const response = await fetch(`${apiUrl}/push`, {
+  try {
+    const apiUrl = getCloudApiUrl();
+    const response = await fetch(`${apiUrl}/push`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ events: pendingEvents })
@@ -81,18 +78,18 @@ class CloudSyncService {
     }
   }
 
-  async pullEvents() {
-    let lastSyncDate = '0';
-    if (fs.existsSync(this.syncStateFile)) {
+async function pullEvents() {
+  let lastSyncDate = '0';
+  if (fs.existsSync(syncStateFile)) {
       try {
-        const state = JSON.parse(fs.readFileSync(this.syncStateFile, 'utf8'));
-        lastSyncDate = state.lastSyncDate || '0';
+      const state = JSON.parse(fs.readFileSync(syncStateFile, 'utf8'));
+      lastSyncDate = state.lastSyncDate || '0';
       } catch (e) {}
     }
 
-    try {
-      const apiUrl = this.getCloudApiUrl();
-      const response = await fetch(`${apiUrl}/pull?since=${encodeURIComponent(lastSyncDate)}`);
+  try {
+    const apiUrl = getCloudApiUrl();
+    const response = await fetch(`${apiUrl}/pull?since=${encodeURIComponent(lastSyncDate)}`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       
       const result = await response.json();
@@ -124,16 +121,22 @@ class CloudSyncService {
           }
         }
 
-        // Save new state
-        fs.writeFileSync(this.syncStateFile, JSON.stringify({ lastSyncDate: newestDate }));
-        
-        // Notify frontend that we pulled new data so UI can refresh
-        ipcNotifier.notifyFrontend('p2p-sync-update', { source: 'cloud' });
-      }
-    } catch (error) {
-      console.error('[CloudSync] Failed to pull events:', error.message);
+      // Save new state
+      fs.writeFileSync(syncStateFile, JSON.stringify({ lastSyncDate: newestDate }));
+      
+      // Notify frontend that we pulled new data so UI can refresh
+      ipcNotifier.notifyFrontend('sync-update', { source: 'cloud' });
     }
+  } catch (error) {
+    console.error('[CloudSync] Failed to pull events:', error.message);
   }
 }
 
-module.exports = new CloudSyncService();
+module.exports = {
+  getCloudApiUrl,
+  start,
+  stop,
+  performSync,
+  pushEvents,
+  pullEvents
+};

@@ -2,12 +2,9 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const { app } = require('electron');
 
-class DatabaseService {
-  constructor() {
-    this.db = null;
-  }
+let dbInstance = null;
 
-  initialize() {
+function initialize() {
     // Get the user data path where the app can write data securely
     const userDataPath = app.getPath('userData');
     const dbFileName = process.env.DB_NAME || 'clinicflow-local.db';
@@ -16,21 +13,21 @@ class DatabaseService {
     console.log(`[DatabaseService] Initializing database at: ${dbPath}`);
     
     // Connect to better-sqlite3 database
-    this.db = new Database(dbPath);
-    this.db.pragma('journal_mode = WAL'); // Better performance and concurrency
+    dbInstance = new Database(dbPath);
+    dbInstance.pragma('journal_mode = WAL'); // Better performance and concurrency
     
-    this.initializeSchema();
-    return this.db;
+    initializeSchema();
+    return dbInstance;
   }
 
-  initializeSchema() {
-    if (!this.db) throw new Error("Database not initialized");
+  function initializeSchema() {
+    if (!dbInstance) throw new Error("Database not initialized");
 
     console.log("[DatabaseService] Running schema migrations...");
 
     // Create the schema. This mirrors the previous local-server but adds the upcoming tables 
     // from the PRD for Phase 2 (Events), Phase 7 (Sync Checkpoints) and Phase 9 (Audit)
-    this.db.exec(`
+    dbInstance.exec(`
       -- Old Schema Tables
       CREATE TABLE IF NOT EXISTS clinics (
         id TEXT PRIMARY KEY,
@@ -133,6 +130,8 @@ class DatabaseService {
         created_by TEXT,
         logical_clock INTEGER DEFAULT 0,
         node_id TEXT,
+        is_deleted INTEGER DEFAULT 0,
+        deleted_at DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (clinic_id) REFERENCES clinics(id),
@@ -174,31 +173,28 @@ class DatabaseService {
       );
     `);
 
-    // Schema Migrations
     try {
-      this.db.exec(`ALTER TABLE events ADD COLUMN cloud_synced INTEGER DEFAULT 0;`);
+      dbInstance.exec(`ALTER TABLE appointments ADD COLUMN logical_clock INTEGER DEFAULT 0;`);
+      dbInstance.exec(`ALTER TABLE appointments ADD COLUMN node_id TEXT;`);
     } catch(e) { /* Column already exists */ }
-    
+
     try {
-      this.db.exec(`ALTER TABLE events ADD COLUMN logical_clock INTEGER DEFAULT 0;`);
-    } catch(e) { /* Column already exists */ }
-    
-    try {
-      this.db.exec(`ALTER TABLE appointments ADD COLUMN logical_clock INTEGER DEFAULT 0;`);
-      this.db.exec(`ALTER TABLE appointments ADD COLUMN node_id TEXT;`);
-    } catch(e) { /* Column already exists */ }
+      dbInstance.prepare('ALTER TABLE appointments ADD COLUMN is_deleted INTEGER DEFAULT 0').run();
+      dbInstance.prepare('ALTER TABLE appointments ADD COLUMN deleted_at DATETIME').run();
+      console.log('[DatabaseService] Added is_deleted and deleted_at columns to appointments table.');
+    } catch (err) {
+      // Ignore if columns already exist
+    }
 
     console.log("[DatabaseService] Schema initialized successfully");
   }
 
   // Helper function to get database instance
-  getDb() {
-    if (!this.db) {
+  function getDb() {
+    if (!dbInstance) {
       throw new Error("Database not initialized. Call initialize() first.");
     }
-    return this.db;
+    return dbInstance;
   }
-}
 
-// Export a singleton instance
-module.exports = new DatabaseService();
+module.exports = { initialize, initializeSchema, getDb };

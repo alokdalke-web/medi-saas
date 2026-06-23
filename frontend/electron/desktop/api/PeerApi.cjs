@@ -1,14 +1,11 @@
 const http = require('http');
 const dbService = require('../database/DatabaseService.cjs');
 
-class PeerApi {
-  constructor() {
-    this.port = process.env.PEER_PORT ? parseInt(process.env.PEER_PORT) : 5002;
-    this.server = null;
-  }
+let port = process.env.PEER_PORT ? parseInt(process.env.PEER_PORT) : 5002;
+let server = null;
 
-  initialize() {
-    this.server = http.createServer((req, res) => {
+function initialize() {
+  server = http.createServer((req, res) => {
       // Set CORS headers so browser-based peers or tools can hit this if needed
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Content-Type', 'application/json');
@@ -43,10 +40,9 @@ class PeerApi {
       res.end(JSON.stringify({ success: false, error: 'Not Found' }));
     });
 
-    this.server.listen(this.port, '0.0.0.0', () => {
-      console.log(`[PeerApi] P2P Server listening on port ${this.port} across all LAN interfaces`);
+    server.listen(port, '0.0.0.0', () => {
+      console.log(`[PeerApi] P2P Server listening on port ${port} across all LAN interfaces`);
     });
-  }
 }
 
-module.exports = new PeerApi();
+module.exports = { initialize };

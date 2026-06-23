@@ -17,7 +17,11 @@ export const fetchApi = async (endpoint, options = {}) => {
       }
     };
 
-    return await window.electronAPI.invokeApi(endpoint, enrichedOptions);
+    const result = await window.electronAPI.invokeApi(endpoint, enrichedOptions);
+    if (result && result.error) {
+       throw new Error(result.message || result.error);
+    }
+    return result;
   } catch (error) {
     console.error(`[IPC API Error] ${endpoint}:`, error);
     
@@ -29,11 +33,3 @@ export const fetchApi = async (endpoint, options = {}) => {
     throw error;
   }
 };
-
-// Phase 6: Global listener for real-time P2P sync updates from the desktop wrapper
-if (window.electronAPI && window.electronAPI.onSyncUpdate) {
-  window.electronAPI.onSyncUpdate((payload) => {
-    console.log('[Sync] Received real-time P2P sync update:', payload);
-    window.dispatchEvent(new CustomEvent('p2p-sync-update', { detail: payload }));
-  });
-}

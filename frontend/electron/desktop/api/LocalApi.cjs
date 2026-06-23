@@ -1,27 +1,32 @@
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const dbService = require('../database/DatabaseService.cjs');
 const eventStoreService = require('../services/EventStoreService.cjs');
 
+const LOCAL_SECRET = 'temporary-offline-secret'; // Phase 1: Local JWT secret
 // Phase 10: RBAC Permissions Map
 const ROLE_PERMISSIONS = {
   'clinic_admin': ['/clinics', '/auth', '/health', '/sync', '/dashboard', '/patients', '/doctors', '/appointments', '/users', '/network'],
-  'receptionist': ['/auth', '/health', '/sync', '/dashboard', '/patients', '/appointments', '/network'],
-  'doctor': ['/auth', '/health', '/sync', '/dashboard', '/patients', '/appointments', '/network'],
+  'receptionist': ['/auth', '/health', '/sync', '/dashboard', '/patients', '/doctors', '/appointments', '/network'],
+  'doctor': ['/auth', '/health', '/sync', '/dashboard', '/patients', '/doctors', '/appointments', '/network'],
   'billing': ['/auth', '/health', '/sync', '/dashboard', '/network']
 };
 
-class LocalApi {
-  constructor() {
-    console.log('[LocalApi] Initialized.');
-  }
+console.log('[LocalApi] Initialized.');
 
-  /**
-   * Phase 10: Verify the user's role against the permissions map
-   */
-  verifyTokenAndRole(token, endpoint, method) {
-    // For this Phase 10 mock, we treat the token string as the role identifier.
-    // In a real scenario, we would `jwt.verify(token)` and extract the role.
-    const role = token || 'clinic_admin'; // Default fallback for existing tests
+/**
+ * Phase 10: Verify the user's role against the permissions map
+ */
+function verifyTokenAndRole(token, endpoint, method) {
+    if (!token) throw new Error('401 Unauthorized: Missing token');
+    let decoded;
+    try {
+      decoded = jwt.verify(token, LOCAL_SECRET);
+    } catch (err) {
+      throw new Error('401 Unauthorized: Invalid token');
+    }
+    const role = decoded.role;
     
     // Normalize endpoint (e.g., '/clinics/123' -> '/clinics', or '/patients?search=foo' -> '/patients')
     const pathOnly = endpoint.split('?')[0];
@@ -35,10 +40,10 @@ class LocalApi {
     return role;
   }
 
-  /**
-   * Main router for all IPC requests from the frontend
-   */
-  async handleRequest(endpoint, options = {}) {
+/**
+ * Main router for all IPC requests from the frontend
+ */
+async function handleRequest(endpoint, options = {}) {
     console.log(`[LocalApi] Handling request: ${options.method || 'GET'} ${endpoint}`);
     
     try {
@@ -49,7 +54,7 @@ class LocalApi {
       // Phase 10: Enforce RBAC Security
       const token = options.headers?.Authorization?.replace('Bearer ', '');
       if (endpoint !== '/auth/login') {
-        this.verifyTokenAndRole(token, endpoint, method);
+        verifyTokenAndRole(token, endpoint, method);
       }
 
       const getVersion = (id, explicitVersion) => {
@@ -59,12 +64,11 @@ class LocalApi {
 
       // Basic routing logic
       
-      // 1. Auth mock (so frontend doesn't crash while we migrate fully)
       if (endpoint === '/auth/me' && method === 'GET') {
-        // Use the verify method to pull the mocked testing role
         const activeRole = this.verifyTokenAndRole(token, '/auth', method);
+        const decoded = jwt.verify(token, LOCAL_SECRET);
         return { 
-          id: 'local_user_1', 
+          id: decoded.id, 
           name: 'Local User', 
           role: activeRole,
           clinic_id: 'default_clinic_id' 
@@ -73,12 +77,18 @@ class LocalApi {
 
       if (endpoint === '/auth/login' && method === 'POST') {
         const email = body.email || '';
+        const password = body.password || '';
         
         // 1. Try to find real user in DB
-        const realUser = db.prepare('SELECT id, name, role FROM users WHERE email = ? AND is_deleted = 0').get(email);
+        const realUser = db.prepare('SELECT id, name, role, password FROM users WHERE email = ? AND is_deleted = 0').get(email);
         if (realUser) {
+          if (!realUser.password) throw new Error('401 Unauthorized: Invalid credentials');
+          const isValid = bcrypt.compareSync(password, realUser.password);
+          if (!isValid) throw new Error('401 Unauthorized: Invalid credentials');
+
+          const authToken = jwt.sign({ id: realUser.id, role: realUser.role }, LOCAL_SECRET, { expiresIn: '24h' });
           return {
-            token: realUser.role, // Keep using role as token for the mock RBAC engine
+            token: authToken, // Keep using role as token for the mock RBAC engine
             user: { id: realUser.id, name: realUser.name, role: realUser.role }
           };
         }
@@ -89,8 +99,9 @@ class LocalApi {
         if (email.includes('doctor')) mockRole = 'doctor';
         if (email.includes('billing')) mockRole = 'billing';
 
+        const authToken = jwt.sign({ id: 'local_user_1', role: mockRole }, LOCAL_SECRET, { expiresIn: '24h' });
         return { 
-          token: mockRole, 
+          token: authToken, 
           user: { id: 'local_user_1', name: `Local ${mockRole.split('_')[0]}`, role: mockRole } 
         };
       }
@@ -280,8 +291,10 @@ class LocalApi {
         }
         if (method === 'POST') {
           const id = crypto.randomUUID();
-          eventStoreService.saveEvent('UserCreated', 'users', id, body, 0, token || 'local_admin_1');
-          return { data: { user: { _id: id, ...body } } };
+          const hashedPassword = body.password ? bcrypt.hashSync(body.password, 10) : bcrypt.hashSync('temp_pass', 10);
+          const payloadBody = { ...body, password: hashedPassword };
+          eventStoreService.saveEvent('UserCreated', 'users', id, payloadBody, 0, token || 'local_admin_1');
+          return { data: { user: { _id: id, ...body, password: undefined } } };
         }
       }
       if (endpoint.startsWith('/users/') && method === 'PUT') {
@@ -289,13 +302,18 @@ class LocalApi {
         const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
         if (!existing) throw new Error('User not found');
 
+        const payloadBody = { ...body };
+        if (payloadBody.password) {
+          payloadBody.password = bcrypt.hashSync(payloadBody.password, 10);
+        }
+
         const updatedBody = {
-          ...body,
-          name: body.name !== undefined ? body.name : existing.name,
-          email: body.email !== undefined ? body.email : existing.email,
-          phone: body.phone !== undefined ? body.phone : existing.phone,
-          role: body.role !== undefined ? body.role : existing.role,
-          isActive: body.isActive !== undefined ? body.isActive : (existing.is_active === 1)
+          ...payloadBody,
+          name: payloadBody.name !== undefined ? payloadBody.name : existing.name,
+          email: payloadBody.email !== undefined ? payloadBody.email : existing.email,
+          phone: payloadBody.phone !== undefined ? payloadBody.phone : existing.phone,
+          role: payloadBody.role !== undefined ? payloadBody.role : existing.role,
+          isActive: payloadBody.isActive !== undefined ? payloadBody.isActive : (existing.is_active === 1)
         };
 
         eventStoreService.saveEvent('UserUpdated', 'users', id, updatedBody, getVersion(id, body.expectedVersion), token || 'local_admin_1');
@@ -318,10 +336,11 @@ class LocalApi {
             FROM appointments a
             LEFT JOIN patients p ON a.patient_id = p.id
             LEFT JOIN doctors d ON a.doctor_id = d.id
+            WHERE a.is_deleted = 0 AND a.status != 'cancelled'
           `;
           let params = [];
           if (date) {
-            query += " WHERE DATE(a.appointment_date) = ?";
+            query += " AND DATE(a.appointment_date) = ?";
             params.push(date.split('T')[0]);
           }
           const rows = db.prepare(query).all(...params);
@@ -400,10 +419,10 @@ class LocalApi {
       if (endpoint === '/dashboard' && method === 'GET') {
         const totalPatients = db.prepare('SELECT COUNT(*) as c FROM patients WHERE is_deleted = 0').get().c;
         const totalDoctors = db.prepare('SELECT COUNT(*) as c FROM doctors WHERE is_deleted = 0').get().c;
-        const totalAppointments = db.prepare("SELECT COUNT(*) as c FROM appointments WHERE status != 'cancelled'").get().c;
+        const totalAppointments = db.prepare("SELECT COUNT(*) as c FROM appointments WHERE status != 'cancelled' AND is_deleted = 0").get().c;
         
         const todayStr = new Date().toISOString().split('T')[0];
-        const todaysAppointments = db.prepare("SELECT COUNT(*) as c FROM appointments WHERE appointment_date = ? AND status != 'cancelled'").get(todayStr).c;
+        const todaysAppointments = db.prepare("SELECT COUNT(*) as c FROM appointments WHERE appointment_date = ? AND status != 'cancelled' AND is_deleted = 0").get(todayStr).c;
         
         const recentApts = db.prepare(`
           SELECT a.id as _id, a.appointment_date as appointmentDate, a.appointment_time as appointmentTime, a.status,
@@ -411,6 +430,7 @@ class LocalApi {
           FROM appointments a
           LEFT JOIN patients p ON a.patient_id = p.id
           LEFT JOIN doctors d ON a.doctor_id = d.id
+          WHERE a.is_deleted = 0
           ORDER BY a.created_at DESC LIMIT 5
         `).all();
         
@@ -429,7 +449,7 @@ class LocalApi {
           FROM appointments a
           LEFT JOIN patients p ON a.patient_id = p.id
           LEFT JOIN doctors d ON a.doctor_id = d.id
-          WHERE a.appointment_date >= ? AND a.status IN ('scheduled', 'checked_in', 'waitlisted')
+          WHERE a.appointment_date >= ? AND a.status IN ('scheduled', 'checked_in', 'waitlisted') AND a.is_deleted = 0
           ORDER BY a.appointment_date ASC, a.appointment_time ASC LIMIT 10
         `).all(todayStr);
 
@@ -456,11 +476,6 @@ class LocalApi {
         };
       }
 
-      // 6. Network Discovery
-      if (endpoint === '/network/nodes' && method === 'GET') {
-        const discoveryService = require('../discovery/DiscoveryService.cjs');
-        return { data: { nodes: discoveryService.getDiscoveredPeers() } };
-      }
 
       console.warn(`[LocalApi] 404 Not Found: ${endpoint}`);
       throw new Error(`Endpoint not found locally: ${endpoint}`);
@@ -485,8 +500,9 @@ class LocalApi {
       
       throw error; // Let the IPC bridge serialize the error back to React
     }
-  }
 }
 
-// Export as singleton
-module.exports = new LocalApi();
+module.exports = {
+  verifyTokenAndRole,
+  handleRequest
+};
