@@ -27,7 +27,11 @@
       "main": "electron/main.cjs"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis-web",
+      "icon": "public/icon_transparent.png"
+    },
+    "nsisWeb": {
+      "appPackageUrl": "https://github.com/alokdalke-web/medi-saas/releases/download/v0.0.0"
     },
     "nsis": {
       "createDesktopShortcut": "always",

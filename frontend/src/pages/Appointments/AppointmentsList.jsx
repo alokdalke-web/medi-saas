@@ -1,15 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchApi } from '../../services/api';
 import AppointmentFormDialog from './AppointmentFormDialog';
-import { 
-  CalendarIcon, 
-  ClockIcon, 
-  UserIcon, 
-  CheckCircleIcon, 
-  XCircleIcon,
-  PlayIcon,
-  StopIcon
-} from '@heroicons/react/24/outline';
 
 export default function AppointmentsList() {
   const [appointments, setAppointments] = useState([]);
@@ -17,12 +8,14 @@ export default function AppointmentsList() {
   const [error, setError] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null);
+  
+  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]); // Today
+  const [filterType, setFilterType] = useState('All'); // 'All', 'My Appointments', 'Pending'
 
   const openReschedule = (apt) => {
     setEditingAppointment(apt);
     setIsFormOpen(true);
   };
-  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]); // Today
 
   const fetchAppointments = async () => {
     try {
@@ -73,143 +66,162 @@ export default function AppointmentsList() {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const styles = {
-      scheduled: 'bg-blue-100 text-blue-800',
-      checked_in: 'bg-yellow-100 text-yellow-800',
-      in_consultation: 'bg-purple-100 text-purple-800',
-      completed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-      waitlisted: 'bg-orange-100 text-orange-800 border border-orange-200 shadow-sm',
-    };
-    return (
-      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status === 'waitlisted' ? '⚠️ WAITLISTED' : status.replace('_', ' ').toUpperCase()}
-      </span>
-    );
+  // Filter the appointments based on filterType
+  const filteredAppointments = appointments.filter(apt => {
+    if (filterType === 'Pending') {
+      return apt.status === 'scheduled' || apt.status === 'waitlisted';
+    }
+    // Assume 'My Appointments' is not fully implemented on backend, just filter locally if we had current userId
+    // For now we'll just show all for 'My Appointments' or you can filter by doctorId
+    return true; 
+  });
+
+  const getStatusInfo = (status) => {
+    switch(status) {
+      case 'scheduled': return { label: 'Scheduled', style: 'bg-primary-container/20 text-on-primary-container border-primary-container/30' };
+      case 'checked_in': return { label: 'Checked-in', style: 'bg-primary-container/20 text-on-primary-container border-primary-container/30' };
+      case 'in_consultation': return { label: 'In Consult', style: 'bg-tertiary-container/20 text-tertiary border-tertiary-container/30' };
+      case 'completed': return { label: 'Completed', style: 'bg-secondary-container/10 text-secondary border-secondary-container/20' };
+      case 'cancelled': return { label: 'Cancelled', style: 'bg-error-container text-on-error-container border-error/10' };
+      case 'waitlisted': return { label: 'Waitlisted', style: 'bg-surface-container-high text-on-surface-variant border-outline-variant/30' };
+      default: return { label: status, style: 'bg-surface-container text-on-surface-variant border-outline-variant/30' };
+    }
   };
 
-  if (loading && appointments.length === 0) return <div className="text-center p-8">Loading appointments...</div>;
+  const formatTime = (timeStr) => {
+    // Assuming timeStr is "14:30"
+    if (!timeStr) return { time: '--:--', period: '--' };
+    const [hours, minutes] = timeStr.split(':');
+    const h = parseInt(hours, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return { time: `${h12.toString().padStart(2, '0')}:${minutes}`, period: ampm };
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
-        <div className="flex space-x-4">
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Top Header Section */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface/80 backdrop-blur-md pb-4 border-b border-outline-variant/30">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold text-primary">Appointments</h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
           <input
             type="date"
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
-            className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border"
+            className="flex items-center gap-1 px-4 py-2 rounded-full bg-surface-container-high/50 hover:bg-surface-container-high transition-colors text-sm font-semibold tracking-wide text-on-surface-variant cursor-pointer border border-outline-variant/30 focus:outline-none focus:ring-2 focus:ring-primary"
           />
-          <button
+          <button 
             onClick={() => { setEditingAppointment(null); setIsFormOpen(true); }}
-            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="px-6 py-2 rounded-full bg-primary text-white text-xs font-semibold tracking-wide transition-all shadow-md active:scale-95 flex items-center gap-2"
           >
+            <span className="material-symbols-outlined text-[18px]">add</span>
             New Appointment
           </button>
         </div>
+      </header>
+
+      {error && <div className="text-error bg-error-container p-4 rounded-md">{error}</div>}
+
+      {/* Quick Filters */}
+      <div className="flex flex-wrap gap-2 mb-10">
+        {['All', 'My Appointments', 'Pending'].map((type) => (
+          <button 
+            key={type}
+            onClick={() => setFilterType(type)}
+            className={`px-6 py-2 rounded-full text-xs font-semibold tracking-wide transition-all active:scale-95 ${
+              filterType === type 
+                ? 'bg-primary text-white shadow-md' 
+                : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
+            }`}
+          >
+            {type}
+          </button>
+        ))}
       </div>
 
-      {error && <div className="text-red-600 bg-red-50 p-4 rounded-md">{error}</div>}
-
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
-          {appointments.length === 0 ? (
-            <li className="p-8 text-center text-gray-500">No appointments scheduled for this date.</li>
-          ) : (
-            appointments.map((apt) => (
-              <li key={apt._id}>
-                <div className="px-4 py-4 sm:px-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        <span className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100">
-                          <span className="text-indigo-600 font-medium text-lg">
-                            {apt.patientId?.firstName?.[0]}{apt.patientId?.lastName?.[0]}
-                          </span>
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-indigo-600 truncate">
-                          {apt.patientId?.firstName} {apt.patientId?.lastName} ({apt.patientId?.patientId})
-                        </p>
-                        <p className="text-sm text-gray-500 flex items-center mt-1">
-                          <UserIcon className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                          Dr. {apt.doctorId?.name} ({apt.doctorId?.specialization})
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col items-end space-y-2">
-                      <div className="flex space-x-2 text-sm text-gray-500">
-                        <span className="flex items-center">
-                          <CalendarIcon className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                          {new Date(apt.appointmentDate).toLocaleDateString()}
-                        </span>
-                        <span className="flex items-center">
-                          <ClockIcon className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                          {apt.appointmentTime}
-                        </span>
-                      </div>
-                      <div>{getStatusBadge(apt.status)}</div>
-                    </div>
+      {/* Calendar List View */}
+      <div className="relative space-y-4 pb-12 before:content-[''] before:absolute before:left-[84px] before:top-0 before:bottom-0 before:w-px before:bg-outline-variant before:opacity-30">
+        
+        {loading ? (
+          <div className="text-center p-8 text-on-surface-variant">Loading appointments...</div>
+        ) : filteredAppointments.length === 0 ? (
+          <div className="text-center p-8 text-on-surface-variant bg-surface-container-low/50 border border-dashed border-outline-variant rounded-xl">No appointments found for this filter.</div>
+        ) : (
+          filteredAppointments.map((apt) => {
+            const { time, period } = formatTime(apt.appointmentTime);
+            const statusInfo = getStatusInfo(apt.status);
+            const isCancelled = apt.status === 'cancelled';
+            
+            return (
+              <div key={apt._id} className={`flex gap-6 group ${isCancelled ? 'opacity-70 grayscale-[0.5]' : ''}`}>
+                <div className="w-16 flex flex-col items-end pt-2">
+                  <span className={`text-xs font-bold ${isCancelled ? 'text-on-surface-variant' : 'text-primary'}`}>{time}</span>
+                  <span className="text-[10px] text-on-surface-variant font-mono">{period}</span>
+                </div>
+                
+                <div className="flex-1 bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center gap-4 group-hover:border-primary-container/50">
+                  <div className="hidden sm:block text-outline-variant opacity-40 group-hover:opacity-100 transition-opacity cursor-grab">
+                    <span className="material-symbols-outlined">drag_indicator</span>
                   </div>
                   
-                  {/* Action Buttons */}
-                  <div className="mt-4 flex space-x-3 justify-end border-t border-gray-100 pt-3">
+                  <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg flex-shrink-0">
+                    {apt.patientId?.firstName?.[0]}{apt.patientId?.lastName?.[0]}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`text-base font-bold truncate ${isCancelled ? 'line-through text-on-surface-variant/50' : 'text-on-surface'}`}>
+                      {apt.patientId?.firstName} {apt.patientId?.lastName}
+                    </h3>
+                    <p className={`text-sm ${isCancelled ? 'text-on-surface-variant/50' : 'text-on-surface-variant'} truncate`}>
+                      {apt.reason || 'Consultation'} with <span className="font-semibold text-primary">Dr. {apt.doctorId?.name}</span>
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0 mt-2 sm:mt-0">
+                    <span className={`px-2 py-[2px] rounded-full text-[11px] font-bold border uppercase tracking-wider ${statusInfo.style}`}>
+                      {statusInfo.label}
+                    </span>
+                    <span className="text-[11px] text-on-surface-variant font-mono">#{apt.patientId?.patientId || 'NEW'}</span>
+                  </div>
+                  
+                  {/* Action Buttons Integrated */}
+                  <div className="flex gap-2 w-full sm:w-auto mt-4 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-0 border-outline-variant/20 flex-wrap justify-end">
                     {apt.status === 'scheduled' && (
-                      <button
-                        onClick={() => handleStatusChange(apt._id, 'checked_in')}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200"
-                      >
-                        <CheckCircleIcon className="mr-1.5 h-4 w-4" /> Check In
+                      <button onClick={() => handleStatusChange(apt._id, 'checked_in')} className="px-3 py-1 bg-surface-container hover:bg-surface-container-high rounded text-xs font-semibold text-primary transition-colors">
+                        Check In
                       </button>
                     )}
                     {apt.status === 'checked_in' && (
-                      <button
-                        onClick={() => handleStatusChange(apt._id, 'in_consultation')}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-purple-700 bg-purple-100 hover:bg-purple-200"
-                      >
-                        <PlayIcon className="mr-1.5 h-4 w-4" /> Start Consult
+                      <button onClick={() => handleStatusChange(apt._id, 'in_consultation')} className="px-3 py-1 bg-surface-container hover:bg-surface-container-high rounded text-xs font-semibold text-tertiary transition-colors">
+                        Start Consult
                       </button>
                     )}
                     {apt.status === 'in_consultation' && (
-                      <button
-                        onClick={() => handleStatusChange(apt._id, 'completed')}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200"
-                      >
-                        <StopIcon className="mr-1.5 h-4 w-4" /> Complete
+                      <button onClick={() => handleStatusChange(apt._id, 'completed')} className="px-3 py-1 bg-surface-container hover:bg-surface-container-high rounded text-xs font-semibold text-secondary transition-colors">
+                        Complete
                       </button>
                     )}
                     {['scheduled', 'checked_in'].includes(apt.status) && (
-                      <button
-                        onClick={() => handleStatusChange(apt._id, 'cancelled')}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200"
-                      >
-                        <XCircleIcon className="mr-1.5 h-4 w-4" /> Cancel
+                      <button onClick={() => handleStatusChange(apt._id, 'cancelled')} className="px-3 py-1 bg-error-container/20 hover:bg-error-container/50 rounded text-xs font-semibold text-error transition-colors">
+                        Cancel
                       </button>
                     )}
                     {apt.status === 'waitlisted' && (
-                      <button
-                        onClick={() => openReschedule(apt)}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-orange-700 bg-orange-100 hover:bg-orange-200"
-                      >
-                        <CalendarIcon className="mr-1.5 h-4 w-4" /> Reschedule
+                      <button onClick={() => openReschedule(apt)} className="px-3 py-1 bg-surface-container hover:bg-surface-container-high rounded text-xs font-semibold text-on-surface-variant transition-colors">
+                        Reschedule
                       </button>
                     )}
-                    <button
-                      onClick={() => handleDelete(apt._id)}
-                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 ml-2"
-                    >
-                      Delete
+                    <button onClick={() => handleDelete(apt._id)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-error-container/50 text-error transition-colors ml-2">
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
                   </div>
                 </div>
-              </li>
-            ))
-          )}
-        </ul>
+              </div>
+            );
+          })
+        )}
       </div>
 
       <AppointmentFormDialog 

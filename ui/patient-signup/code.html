@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Patient Signup | Emerald Health</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#001a42",
+                        "on-background": "#0b1c30",
+                        "primary-fixed": "#6ffbbe",
+                        "surface-container-highest": "#d3e4fe",
+                        "secondary": "#0058be",
+                        "primary-fixed-dim": "#4edea3",
+                        "primary": "#006c49",
+                        "on-tertiary-container": "#4600a7",
+                        "on-secondary-fixed-variant": "#004395",
+                        "outline": "#6c7a71",
+                        "on-tertiary-fixed": "#23005c",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#10b981",
+                        "on-secondary-container": "#fefcff",
+                        "background": "#f8f9ff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#e9ddff",
+                        "tertiary": "#6d3bd7",
+                        "inverse-surface": "#213145",
+                        "tertiary-container": "#b090ff",
+                        "on-surface-variant": "#3c4a42",
+                        "on-primary-fixed-variant": "#005236",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#00422b",
+                        "tertiary-fixed-dim": "#d0bcff",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#4edea3",
+                        "on-error": "#ffffff",
+                        "surface-bright": "#f8f9ff",
+                        "on-primary-fixed": "#002113",
+                        "surface-dim": "#cbdbf5",
+                        "surface-container-high": "#dce9ff",
+                        "secondary-container": "#2170e4",
+                        "on-tertiary-fixed-variant": "#5516be",
+                        "error": "#ba1a1a",
+                        "surface-variant": "#d3e4fe",
+                        "surface-container-low": "#eff4ff",
+                        "secondary-fixed": "#d8e2ff",
+                        "outline-variant": "#bbcabf",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "surface-container": "#e5eeff",
+                        "on-error-container": "#93000a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#0b1c30",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-tint": "#006c49",
+                        "surface": "#f8f9ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "gutter": "24px",
+                        "xs": "4px",
+                        "xl": "40px",
+                        "container-max": "1440px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xxl": "64px",
+                        "sidebar-width": "260px",
+                        "base": "4px",
+                        "sidebar-collapsed": "72px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "code-sm": ["JetBrains Mono"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-sm": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "code-sm": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .emerald-gradient-btn {
+            background: linear-gradient(135deg, #10b981 0%, #006c49 100%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .emerald-gradient-btn:hover {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+        }
+        .custom-tooltip:hover .tooltip-content {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        input:focus {
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col">
+<!-- Top Navigation Anchor -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant/30 shadow-sm h-16">
+<div class="flex items-center justify-between px-gutter h-full w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="medical_services">medical_services</span>
+<span class="font-display-lg text-headline-md font-bold text-primary tracking-tight">Emerald Health</span>
+</div>
+<nav class="hidden md:flex gap-lg items-center">
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Patient Care</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Our Network</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Support</a>
+</nav>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow pt-xxl flex items-center justify-center px-gutter">
+<!-- Asymmetric Background Decorative Elements -->
+<div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+<div class="absolute -top-1/4 -right-1/4 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl"></div>
+<div class="absolute -bottom-1/4 -left-1/4 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl"></div>
+</div>
+<div class="w-full max-w-lg">
+<!-- Glassmorphic Signup Card -->
+<div class="glass-panel border border-outline-variant/50 rounded-xl p-xl shadow-lg relative overflow-hidden">
+<!-- Sublte Branding Icon -->
+<div class="absolute top-0 right-0 p-lg opacity-[0.03] rotate-12">
+<span class="material-symbols-outlined text-[120px]" data-icon="shield_with_heart" style="font-variation-settings: 'FILL' 1;">shield_with_heart</span>
+</div>
+<div class="relative z-10">
+<h1 class="font-headline-lg text-headline-lg text-on-background mb-xs">Begin Your Care</h1>
+<p class="text-on-surface-variant mb-xl font-body-lg">Create your Emerald account to manage appointments, health records, and provider communications.</p>
+<form class="space-y-lg" onsubmit="event.preventDefault();">
+<!-- Name Field -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="name">Full Legal Name</label>
+<div class="relative">
+<input class="w-full h-[48px] px-md rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-0 transition-all text-body-lg placeholder:text-outline/50" id="name" placeholder="Sarah Jane Smith" type="text"/>
+<span class="absolute right-md top-1/2 -translate-y-1/2 material-symbols-outlined text-outline/40" data-icon="person">person</span>
+</div>
+</div>
+<!-- Email Field -->
+<div class="space-y-xs">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="email">Email Address</label>
+<div class="relative custom-tooltip">
+<span class="material-symbols-outlined text-outline text-sm cursor-help" data-icon="help">help</span>
+<div class="tooltip-content absolute bottom-full right-0 mb-sm w-64 p-sm bg-inverse-surface text-inverse-on-surface text-xs rounded-lg shadow-xl opacity-0 invisible transition-all transform translate-y-1 z-20">
+                                        We use this for essential care updates and secure login verification. We never share your data.
+                                    </div>
+</div>
+</div>
+<div class="relative">
+<input class="w-full h-[48px] px-md rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-0 transition-all text-body-lg placeholder:text-outline/50" id="email" placeholder="sarah@example.com" type="email"/>
+<span class="absolute right-md top-1/2 -translate-y-1/2 material-symbols-outlined text-outline/40" data-icon="mail">mail</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- DOB Field -->
+<div class="space-y-xs">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="dob">Date of Birth</label>
+<div class="relative custom-tooltip">
+<span class="material-symbols-outlined text-outline text-sm cursor-help" data-icon="help">help</span>
+<div class="tooltip-content absolute bottom-full left-0 mb-sm w-56 p-sm bg-inverse-surface text-inverse-on-surface text-xs rounded-lg shadow-xl opacity-0 invisible transition-all transform translate-y-1 z-20">
+                                            Needed to verify your identity and match medical records.
+                                        </div>
+</div>
+</div>
+<div class="relative">
+<input class="w-full h-[48px] px-md rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-0 transition-all text-body-lg" id="dob" type="date"/>
+</div>
+</div>
+<!-- Phone Field -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="phone">Phone Number</label>
+<div class="relative">
+<input class="w-full h-[48px] px-md rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-0 transition-all text-body-lg placeholder:text-outline/50" id="phone" placeholder="(555) 000-0000" type="tel"/>
+<span class="absolute right-md top-1/2 -translate-y-1/2 material-symbols-outlined text-outline/40" data-icon="call">call</span>
+</div>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="password">Secure Password</label>
+<div class="relative">
+<input class="w-full h-[48px] px-md rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-0 transition-all text-body-lg placeholder:text-outline/50" id="password" placeholder="••••••••••••" type="password"/>
+<button class="absolute right-md top-1/2 -translate-y-1/2 text-outline/60 hover:text-primary transition-colors" onclick="togglePasswordVisibility()" type="button">
+<span class="material-symbols-outlined" data-icon="visibility" id="pw-icon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Action Area -->
+<div class="pt-md space-y-lg">
+<button class="emerald-gradient-btn w-full h-[52px] rounded-lg text-on-primary font-headline-sm flex items-center justify-center gap-sm transition-all active:scale-[0.98]" type="submit">
+                                Join Emerald Health
+                                <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<div class="text-center pt-xs">
+<a class="text-secondary font-medium hover:underline flex items-center justify-center gap-xs text-body-md transition-all" href="#">
+<span class="material-symbols-outlined text-md" data-icon="admin_panel_settings">admin_panel_settings</span>
+                                    Login as a Provider or Admin
+                                </a>
+</div>
+</div>
+</form>
+</div>
+</div>
+<!-- Trust Badges -->
+<div class="mt-xl flex flex-col md:flex-row items-center justify-center gap-lg opacity-60 grayscale hover:grayscale-0 transition-all">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="text-label-md font-label-md tracking-widest uppercase">HIPAA Compliant</span>
+</div>
+<div class="hidden md:block w-px h-4 bg-outline-variant"></div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="text-label-md font-label-md tracking-widest uppercase">Secure Records</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-xxl w-full bg-surface-container-lowest py-xl border-t border-outline-variant/50">
+<div class="flex flex-col md:flex-row justify-between items-center px-gutter gap-md w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-xs">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">Emerald Health</span>
+<span class="text-on-surface-variant font-body-md">© 2024 Emerald Health Systems. All rights reserved.</span>
+</div>
+<div class="flex gap-lg">
+<a class="text-on-surface-variant font-body-md hover:text-secondary transition-all" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant font-body-md hover:text-secondary transition-all" href="#">Terms of Service</a>
+<a class="text-on-surface-variant font-body-md hover:text-secondary transition-all" href="#">Help Center</a>
+<a class="text-on-surface-variant font-body-md hover:text-secondary transition-all" href="#">Security</a>
+</div>
+</div>
+</footer>
+<script>
+        function togglePasswordVisibility() {
+            const pwField = document.getElementById('password');
+            const pwIcon = document.getElementById('pw-icon');
+            if (pwField.type === 'password') {
+                pwField.type = 'text';
+                pwIcon.textContent = 'visibility_off';
+            } else {
+                pwField.type = 'password';
+                pwIcon.textContent = 'visibility';
+            }
+        }
+
+        // Lightweight animation for the glass panel entry
+        document.addEventListener('DOMContentLoaded', () => {
+            const card = document.querySelector('.glass-panel');
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+</body></html>

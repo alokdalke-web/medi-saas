@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Emerald Health - Appointment Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#d0bcff",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed-dim": "#4edea3",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-tertiary-container": "#4600a7",
+                        "on-secondary-container": "#fefcff",
+                        "on-background": "#0b1c30",
+                        "primary-fixed": "#6ffbbe",
+                        "on-secondary-fixed-variant": "#004395",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#6d3bd7",
+                        "on-tertiary-fixed": "#23005c",
+                        "surface-container": "#e5eeff",
+                        "on-secondary-fixed": "#001a42",
+                        "on-surface": "#0b1c30",
+                        "surface-tint": "#006c49",
+                        "inverse-on-surface": "#eaf1ff",
+                        "tertiary-fixed": "#e9ddff",
+                        "primary-container": "#10b981",
+                        "surface-bright": "#f8f9ff",
+                        "primary": "#006c49",
+                        "surface-variant": "#d3e4fe",
+                        "on-surface-variant": "#3c4a42",
+                        "surface-container-high": "#dce9ff",
+                        "secondary-container": "#2170e4",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#bbcabf",
+                        "background": "#f8f9ff",
+                        "on-primary-container": "#00422b",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#eff4ff",
+                        "on-primary-fixed": "#002113",
+                        "surface": "#f8f9ff",
+                        "on-tertiary-fixed-variant": "#5516be",
+                        "surface-container-highest": "#d3e4fe",
+                        "outline": "#6c7a71",
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#b090ff",
+                        "inverse-primary": "#4edea3",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#005236",
+                        "on-primary": "#ffffff",
+                        "secondary": "#0058be",
+                        "surface-dim": "#cbdbf5",
+                        "inverse-surface": "#213145",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#adc6ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "lg": "24px",
+                        "sm": "8px",
+                        "xxl": "64px",
+                        "xl": "40px",
+                        "container-max": "1440px",
+                        "sidebar-collapsed": "72px",
+                        "xs": "4px",
+                        "sidebar-width": "260px",
+                        "gutter": "24px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "code-sm": ["JetBrains Mono"],
+                        "headline-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "code-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-sm": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .drag-handle {
+            cursor: grab;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        .time-line::before {
+            content: '';
+            position: absolute;
+            left: 84px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: theme('colors.outline-variant');
+            opacity: 0.3;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-md overflow-x-hidden">
+<!-- Navigation Drawer (Desktop) -->
+<aside class="hidden md:flex flex-col p-md gap-sm fixed left-0 top-0 h-full z-50 w-sidebar-width bg-surface/95 backdrop-blur-lg border-r border-outline-variant/30 shadow-xl">
+<div class="flex items-center gap-md px-md py-xl mb-md">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">medical_services</span>
+</div>
+<span class="text-primary font-headline-sm font-bold">Emerald Health</span>
+</div>
+<nav class="flex flex-col gap-sm flex-1">
+<div class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high rounded-lg px-md py-sm cursor-pointer transition-transform active:scale-[0.98]">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</div>
+<div class="flex items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm cursor-pointer transition-transform active:scale-[0.98]">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="text-label-md font-label-md">Appointments</span>
+</div>
+<div class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high rounded-lg px-md py-sm cursor-pointer transition-transform active:scale-[0.98]">
+<span class="material-symbols-outlined">group</span>
+<span class="text-label-md font-label-md">Patients</span>
+</div>
+<div class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high rounded-lg px-md py-sm cursor-pointer transition-transform active:scale-[0.98]">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</div>
+</nav>
+<div class="mt-auto border-t border-outline-variant/30 pt-md px-md">
+<div class="flex items-center gap-md">
+<img alt="Provider Profile" class="w-10 h-10 rounded-full border border-primary/20" data-alt="A professional headshot of a middle-aged male doctor with a kind expression, wearing a crisp white laboratory coat and a stethoscope. The background is a clean, minimalist clinical setting with soft emerald green lighting accents and a high-key, professional aesthetic. The image conveys trust, precision, and healthcare expertise in a modern corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnKY1xibj2OBhPvP_TgGTnTiqTe4VXGd4fSejaLAkOzSg5YH1xtmcGUa7hsnuFKFZsW5A4oUWwOoiJ740Q3d1PgbW_RuRL8J4G3zE0DcVWv8Qrr-F_8wwN29xiohX6KA3Ay7HV0gO7i11zJyxzuHtQ99SKpzfgx149SwXokkl71pFDSRP6DYfOw1prvumqvlTIUSPoaHflyP1S8NKMi00Y9laoH4YHc543KCaLQ9MdKRX59AcV2BK5eYaYtRZhwoOoMSCPY3kVjJE"/>
+<div class="flex flex-col">
+<span class="text-label-md font-bold">Dr. Sterling</span>
+<span class="text-[10px] text-on-surface-variant opacity-70">Admin</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="md:ml-sidebar-width min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="fixed top-0 z-40 h-16 w-full md:w-[calc(100%-260px)] flex justify-between items-center px-gutter bg-surface/80 backdrop-blur-md border-b border-outline-variant/30 shadow-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined md:hidden text-primary">menu</span>
+<h1 class="text-headline-sm font-headline-md font-bold text-primary">Appointments</h1>
+</div>
+<div class="flex items-center gap-md">
+<button class="flex items-center gap-xs px-md py-sm rounded-full bg-surface-container-high/50 hover:bg-surface-container-high transition-colors text-on-surface-variant cursor-pointer active:scale-95">
+<span class="material-symbols-outlined text-[20px]">calendar_month</span>
+<span class="text-label-md">Today, Oct 25, 2023</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center cursor-pointer hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-primary">search</span>
+</div>
+</div>
+</header>
+<div class="pt-24 px-gutter max-w-5xl mx-auto">
+<!-- Quick Filters -->
+<div class="flex flex-wrap gap-sm mb-xl">
+<button class="px-lg py-sm rounded-full bg-primary text-on-primary font-label-md transition-all shadow-md active:scale-95">All</button>
+<button class="px-lg py-sm rounded-full bg-surface-container-high text-on-surface-variant font-label-md hover:bg-surface-container-highest transition-all active:scale-95">My Appointments</button>
+<button class="px-lg py-sm rounded-full bg-surface-container-high text-on-surface-variant font-label-md hover:bg-surface-container-highest transition-all active:scale-95">Pending</button>
+</div>
+<!-- Calendar List View -->
+<div class="relative space-y-md time-line pb-12">
+<!-- 09:00 AM Slot -->
+<div class="flex gap-lg group">
+<div class="w-16 flex flex-col items-end pt-sm">
+<span class="text-label-md font-bold text-primary">09:00</span>
+<span class="text-[10px] text-on-surface-variant font-code-sm">AM</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-md shadow-sm hover:shadow-md transition-all flex items-center gap-md group-hover:border-primary-container/50">
+<div class="drag-handle text-outline-variant opacity-40 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">drag_indicator</span>
+</div>
+<img alt="Dr. Sarah Smith" class="w-12 h-12 rounded-lg object-cover" data-alt="A professional portrait of Dr. Sarah Smith, a female physician in her late 30s with a warm and approachable smile. She has dark hair tied back and is wearing professional medical attire. The image is set against a clean, soft-focus clinic background with emerald green and cool blue tones, reflecting a premium healthcare environment with bright, natural lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9FXAOk3YAu7fUiixBlz_Zu7bNjhAxuk_x1eYlvXpITXDTtnm95gwVPwMOU3z-dPbI_ZoKFAwAuM-eqewRhH4OBUR6LCTajN80-ebScUaA0aSg8x3213HJpvYcq63rExwLNbU-XXg6fqV4QDDS9IYKKezxWYG-RFs_jpQP3bKeM_yLDuXLQc0eaCsMMQ8dy3c9z6ESUsxu2F4w7R6RFqBuNbZJznIfCVE3tC5X4V6tRehB8K2T8awDnNVvHz_tLAP3m5C35EXGS6o"/>
+<div class="flex-1">
+<h3 class="text-body-lg font-bold">James Wilson</h3>
+<p class="text-body-md text-on-surface-variant">Checkup with <span class="text-primary font-semibold">Dr. Sarah Smith</span></p>
+</div>
+<div class="hidden sm:flex flex-col items-end gap-xs">
+<span class="px-sm py-[2px] rounded-full bg-primary-container/20 text-on-primary-container text-[11px] font-bold border border-primary-container/30 uppercase tracking-wider">Checked-in</span>
+<span class="text-[11px] text-on-surface-variant font-code-sm">Room 204</span>
+</div>
+<button class="w-8 h-8 rounded-full hover:bg-surface-container-high flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</div>
+<!-- 10:30 AM Slot -->
+<div class="flex gap-lg group">
+<div class="w-16 flex flex-col items-end pt-sm">
+<span class="text-label-md font-bold text-primary">10:30</span>
+<span class="text-[10px] text-on-surface-variant font-code-sm">AM</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-md shadow-sm hover:shadow-md transition-all flex items-center gap-md group-hover:border-primary-container/50">
+<div class="drag-handle text-outline-variant opacity-40 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">drag_indicator</span>
+</div>
+<img alt="Dr. Kevin Lee" class="w-12 h-12 rounded-lg object-cover" data-alt="A focused headshot of Dr. Kevin Lee, a young male specialist with a modern professional appearance. He is wearing a dark navy scrub top and is set against a contemporary healthcare workspace background with subtle glass textures and soft-key lighting in shades of emerald green and crisp white. The image reflects clinical precision and a patient-centered approach in a high-tech medical facility." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoRJAb7IcvpI4Cbb3NcrE3Ye1PLnc2Zk9y6GCCmAgyQx0gxEO-ylQcm5EaRSK0yxX9YiGSZr-vO5mUQ_eruJC40bpQ8GuJvpDNXhT7z9Bacc2QWzNciqme5lG0Tza3bwlxEo8hmN9wIVFcMhMTdH66z2abhGowFlhxZRxUk2fNEWZHLetQCVBhGCAbLYjsnJjd9ndcPSdi9MN_V-51pv7uzazlfV3icOE8MnUzaTGyoVdrczBPRux89o1sChuQj0SXxhoqS9R9AuA"/>
+<div class="flex-1">
+<h3 class="text-body-lg font-bold">Emily Davis</h3>
+<p class="text-body-md text-on-surface-variant">Consultation with <span class="text-primary font-semibold">Dr. Kevin Lee</span></p>
+</div>
+<div class="hidden sm:flex flex-col items-end gap-xs">
+<span class="px-sm py-[2px] rounded-full bg-secondary-container/10 text-secondary text-[11px] font-bold border border-secondary-container/20 uppercase tracking-wider">Waiting</span>
+<span class="text-[11px] text-on-surface-variant font-code-sm">Main Lounge</span>
+</div>
+<button class="w-8 h-8 rounded-full hover:bg-surface-container-high flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</div>
+<!-- 01:00 PM Slot (Available) -->
+<div class="flex gap-lg group">
+<div class="w-16 flex flex-col items-end pt-sm">
+<span class="text-label-md font-bold text-on-surface-variant opacity-50">01:00</span>
+<span class="text-[10px] text-on-surface-variant font-code-sm opacity-50">PM</span>
+</div>
+<div class="flex-1 bg-surface-container-low/50 border border-dashed border-outline-variant rounded-xl p-md flex items-center justify-between group-hover:bg-surface-container-high/40 transition-all">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/20">
+<span class="material-symbols-outlined text-on-surface-variant/40">event_available</span>
+</div>
+<div>
+<h3 class="text-body-lg font-bold text-on-surface-variant/60">[Available Slot]</h3>
+<p class="text-[12px] text-on-surface-variant/40">Open for booking</p>
+</div>
+</div>
+<button class="px-lg py-sm bg-primary hover:bg-primary-container text-on-primary rounded-lg font-label-md transition-all shadow-sm active:scale-95 flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                            Book Slot
+                        </button>
+</div>
+</div>
+<!-- 02:30 PM Slot (Cancelled) -->
+<div class="flex gap-lg group opacity-70 grayscale-[0.5]">
+<div class="w-16 flex flex-col items-end pt-sm">
+<span class="text-label-md font-bold text-on-surface-variant">02:30</span>
+<span class="text-[10px] text-on-surface-variant font-code-sm">PM</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-md flex items-center gap-md">
+<div class="drag-handle text-outline-variant">
+<span class="material-symbols-outlined">drag_indicator</span>
+</div>
+<div class="w-12 h-12 rounded-lg bg-error-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-error">person_off</span>
+</div>
+<div class="flex-1">
+<h3 class="text-body-lg font-bold line-through text-on-surface-variant/50">Michael Brown</h3>
+<p class="text-body-md text-on-surface-variant/50">Routine Exam with <span class="font-semibold">Dr. Sarah Smith</span></p>
+</div>
+<div class="hidden sm:flex flex-col items-end gap-xs">
+<span class="px-sm py-[2px] rounded-full bg-error-container text-on-error-container text-[11px] font-bold border border-error/10 uppercase tracking-wider">Cancelled</span>
+</div>
+<button class="w-8 h-8 rounded-full hover:bg-surface-container-high flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[20px]">refresh</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-md py-sm pb-safe md:hidden bg-surface/90 backdrop-blur-xl border-t border-outline-variant/20 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-50 rounded-t-xl">
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:text-primary active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-primary font-bold bg-primary-container/20 rounded-xl px-4 py-1 active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="text-label-md font-label-md">Appointments</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:text-primary active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined">group</span>
+<span class="text-label-md font-label-md">Patients</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:text-primary active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</div>
+</nav>
+<script>
+        // Simple Micro-interactions
+        document.querySelectorAll('.active\\:scale-95').forEach(button => {
+            button.addEventListener('mousedown', () => button.classList.add('scale-95'));
+            button.addEventListener('mouseup', () => button.classList.remove('scale-95'));
+            button.addEventListener('mouseleave', () => button.classList.remove('scale-95'));
+        });
+
+        // Search highlight effect
+        const searchBtn = document.querySelector('.material-symbols-outlined:contains("search")');
+        if(searchBtn) {
+            searchBtn.parentElement.addEventListener('click', () => {
+                console.log('Search triggered');
+            });
+        }
+    </script>
+</body></html>

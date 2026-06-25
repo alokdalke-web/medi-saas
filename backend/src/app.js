@@ -14,6 +14,7 @@ const patientRouter = require('./modules/patients/patient.routes');
 const appointmentRouter = require('./modules/appointments/appointment.routes');
 const dashboardRouter = require('./modules/dashboard/dashboard.routes');
 const syncRouter = require('./modules/sync/sync.routes');
+const swaggerDocs = require('./config/swagger');
 
 const app = express();
 
@@ -36,6 +37,9 @@ app.use('/api/v1/patients', patientRouter);
 app.use('/api/v1/appointments', appointmentRouter);
 app.use('/api/v1/dashboard', dashboardRouter);
 app.use('/api/v1/sync', syncRouter);
+
+// Initialize Swagger Docs
+swaggerDocs(app);
 
 // Handle undefined routes
 app.use((req, res, next) => {

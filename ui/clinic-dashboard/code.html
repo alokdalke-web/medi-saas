@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Emerald Health | Provider Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface": "#f8f9ff",
+                        "surface-dim": "#cbdbf5",
+                        "surface-bright": "#f8f9ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "surface-container": "#e5eeff",
+                        "surface-container-high": "#dce9ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-surface": "#0b1c30",
+                        "on-surface-variant": "#3c4a42",
+                        "inverse-surface": "#213145",
+                        "inverse-on-surface": "#eaf1ff",
+                        "outline": "#6c7a71",
+                        "outline-variant": "#bbcabf",
+                        "surface-tint": "#006c49",
+                        "primary": "#006c49",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#10b981",
+                        "on-primary-container": "#00422b",
+                        "inverse-primary": "#4edea3",
+                        "secondary": "#0058be",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#2170e4",
+                        "on-secondary-container": "#fefcff",
+                        "tertiary": "#6d3bd7",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#b090ff",
+                        "on-tertiary-container": "#4600a7",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#6ffbbe",
+                        "primary-fixed-dim": "#4edea3",
+                        "on-primary-fixed": "#002113",
+                        "on-primary-fixed-variant": "#005236",
+                        "secondary-fixed": "#d8e2ff",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "on-secondary-fixed": "#001a42",
+                        "on-secondary-fixed-variant": "#004395",
+                        "tertiary-fixed": "#e9ddff",
+                        "tertiary-fixed-dim": "#d0bcff",
+                        "on-tertiary-fixed": "#23005c",
+                        "on-tertiary-fixed-variant": "#5516be",
+                        "background": "#f8f9ff",
+                        "on-background": "#0b1c30",
+                        "surface-variant": "#d3e4fe"
+                    },
+                    borderRadius: {
+                        "sm": "0.25rem",
+                        "DEFAULT": "0.5rem",
+                        "md": "0.75rem",
+                        "lg": "1rem", // 16px
+                        "xl": "1.5rem", // 24px
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "base": "4px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xl": "40px",
+                        "xxl": "64px",
+                        "container-max": "1440px",
+                        "sidebar-width": "260px",
+                        "sidebar-collapsed": "72px",
+                        "gutter": "24px"
+                    },
+                    fontFamily: {
+                        "headline-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "code-sm": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display-lg": ["Inter"]
+                    },
+                    fontSize: {
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-sm": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "code-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}]
+                    },
+                    boxShadow: {
+                        "card": "0 4px 20px -2px rgba(0, 0, 0, 0.05)"
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8f9ff;
+            -webkit-font-smoothing: antialiased;
+        }
+        /* Custom utilities */
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 24px;
+            bottom: -24px;
+            width: 2px;
+            background-color: #e2e8f0;
+        }
+        .timeline-item:last-child .timeline-line::before {
+            display: none;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+
+<!-- Desktop Navigation Drawer -->
+<aside class="fixed left-0 top-0 h-full z-50 w-sidebar-width bg-surface-container-lowest border-r border-outline-variant/30 hidden md:flex flex-col flex-shrink-0" id="sidebar">
+    <div class="flex items-center gap-sm p-lg mt-sm mb-4">
+        <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+        </div>
+        <span class="text-[20px] font-bold text-primary">Emerald Health</span>
+    </div>
+    
+    <nav class="flex-1 space-y-2 px-md mt-sm">
+        <a href="#" class="flex items-center gap-md bg-primary-container text-on-primary-container rounded-lg px-md py-sm cursor-pointer font-bold transition-all">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+            <span class="text-body-md font-bold">Dashboard</span>
+        </a>
+        <a href="#" class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-low rounded-lg px-md py-sm cursor-pointer transition-colors">
+            <span class="material-symbols-outlined">calendar_today</span>
+            <span class="text-body-md">Appointments</span>
+        </a>
+        <a href="#" class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-low rounded-lg px-md py-sm cursor-pointer transition-colors">
+            <span class="material-symbols-outlined">group</span>
+            <span class="text-body-md">Patients</span>
+        </a>
+        <a href="#" class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-low rounded-lg px-md py-sm cursor-pointer transition-colors">
+            <span class="material-symbols-outlined">settings</span>
+            <span class="text-body-md">Settings</span>
+        </a>
+    </nav>
+    
+    <div class="border-t border-outline-variant/20 p-lg">
+        <div class="flex items-center gap-md">
+            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIUho0vFlvoxWgXaL4Fx4R_b6WDVkHWJJ8GX1-YXYgv9DSEXkdd5cAnD9ploA0skeNCJkZv3Zkj5NZZFUdua1uHhsZsnbeujQTvNu8l9DavIRagJtWgT8y7CPpFfB4Fc7RrCAe9GNrj-bG9F_glHPdpk3p93A_M5ckIC2H9Krn_204uJUjIjrGlAIeuA4nO-JsxEJCYWJguox-mXeo8HA1athlPV4tsQWc9WxuBLl5W7QImrfWmlLwWZYW0n9xtj6jZb7U2T4cSkY" alt="Dr. Sterling" class="w-10 h-10 rounded-full object-cover border border-outline-variant/30"/>
+            <div class="flex flex-col flex-1">
+                <span class="text-[13px] font-bold text-on-surface">Dr. Sterling</span>
+                <span class="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">Admin</span>
+            </div>
+            <button class="text-on-surface-variant hover:text-primary transition-colors">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </div>
+</aside>
+
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 right-0 z-40 bg-surface-container-lowest border-b border-outline-variant/20 h-[72px] flex items-center justify-between px-lg md:pl-[284px] transition-all">
+    <div class="flex items-center gap-md md:hidden">
+        <span class="material-symbols-outlined text-primary cursor-pointer active:scale-95 transition-transform">menu</span>
+    </div>
+    
+    <div class="hidden md:flex">
+        <span class="text-body-md text-on-surface-variant">Good morning, Dr. Sterling</span>
+    </div>
+    
+    <div class="flex items-center gap-lg ml-auto">
+        <div class="relative hidden sm:block">
+            <input type="text" placeholder="Search patients or records..." class="bg-surface-container border border-outline-variant/20 rounded-full pl-lg pr-12 py-2.5 text-[13px] w-[320px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface"/>
+            <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+        </div>
+        
+        <div class="flex items-center gap-sm">
+            <button class="relative p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">
+                <span class="material-symbols-outlined">notifications</span>
+                <span class="absolute top-2 right-2 w-1.5 h-1.5 bg-error rounded-full border border-white"></span>
+            </button>
+            <button class="p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant">
+                <span class="material-symbols-outlined">help</span>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content Area -->
+<main class="pt-[104px] pb-xl px-lg md:ml-sidebar-width min-h-screen bg-surface">
+    <div class="max-w-container-max mx-auto">
+        
+        <!-- Hero Section -->
+        <section class="flex flex-col md:flex-row md:items-end justify-between gap-md mb-xl">
+            <div>
+                <h1 class="font-headline-lg text-[32px] font-bold text-on-surface mb-1">Clinic Overview</h1>
+                <p class="text-[16px] text-on-surface-variant">You have <span class="text-primary font-bold">12 appointments</span> scheduled for today.</p>
+            </div>
+            <div class="flex gap-md">
+                <button class="bg-surface-container-low border border-outline-variant/30 text-on-surface font-bold px-md py-2.5 rounded-lg text-[14px] flex items-center gap-sm hover:bg-surface-container transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">file_download</span>
+                    Export Report
+                </button>
+                <button class="bg-primary text-white font-bold px-md py-2.5 rounded-lg text-[14px] flex items-center gap-sm hover:brightness-110 shadow-sm transition-all">
+                    <span class="material-symbols-outlined text-[20px]">add</span>
+                    New Appointment
+                </button>
+            </div>
+        </section>
+
+        <!-- Metrics Grid -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-lg mb-xl">
+            <!-- Metric Card 1 -->
+            <div class="card p-lg">
+                <div class="flex justify-between items-start mb-md">
+                    <div class="w-10 h-10 rounded-lg bg-[#dcfce7] flex items-center justify-center">
+                        <span class="material-symbols-outlined text-primary">group</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-primary font-bold text-label-md">
+                        <span class="material-symbols-outlined text-[16px]">trending_up</span>
+                        +12%
+                    </div>
+                </div>
+                <div class="text-[11px] uppercase tracking-[0.05em] text-on-surface-variant font-bold mb-1">Total Patients</div>
+                <div class="text-[28px] font-bold text-on-surface leading-tight">1,482</div>
+            </div>
+
+            <!-- Metric Card 2 -->
+            <div class="card p-lg">
+                <div class="flex justify-between items-start mb-md">
+                    <div class="w-10 h-10 rounded-lg bg-[#dbeafe] flex items-center justify-center">
+                        <span class="material-symbols-outlined text-secondary">payments</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-primary font-bold text-label-md">
+                        <span class="material-symbols-outlined text-[16px]">trending_up</span>
+                        +8.4%
+                    </div>
+                </div>
+                <div class="text-[11px] uppercase tracking-[0.05em] text-on-surface-variant font-bold mb-1">Monthly Revenue</div>
+                <div class="text-[28px] font-bold text-on-surface leading-tight">$42,500</div>
+            </div>
+
+            <!-- Metric Card 3 -->
+            <div class="card p-lg">
+                <div class="flex justify-between items-start mb-md">
+                    <div class="w-10 h-10 rounded-lg bg-[#f3e8ff] flex items-center justify-center">
+                        <span class="material-symbols-outlined text-tertiary">calendar_clock</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-error font-bold text-label-md">
+                        <span class="material-symbols-outlined text-[16px]">trending_down</span>
+                        -2.1%
+                    </div>
+                </div>
+                <div class="text-[11px] uppercase tracking-[0.05em] text-on-surface-variant font-bold mb-1">Avg. Wait Time</div>
+                <div class="text-[28px] font-bold text-on-surface leading-tight">14 min</div>
+            </div>
+
+            <!-- Metric Card 4 -->
+            <div class="card p-lg">
+                <div class="flex justify-between items-start mb-md">
+                    <div class="w-10 h-10 rounded-lg bg-[#dcfce7] flex items-center justify-center">
+                        <span class="material-symbols-outlined text-primary">verified</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-primary font-bold text-label-md">
+                        <span class="material-symbols-outlined text-[16px]">trending_up</span>
+                        +5%
+                    </div>
+                </div>
+                <div class="text-[11px] uppercase tracking-[0.05em] text-on-surface-variant font-bold mb-1">Patient Rating</div>
+                <div class="text-[28px] font-bold text-on-surface leading-tight">4.9/5</div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-lg mb-xl">
+            <!-- Revenue Analytics -->
+            <div class="lg:col-span-2 card p-lg">
+                <div class="flex justify-between items-start mb-xl">
+                    <div>
+                        <h2 class="text-[20px] font-bold text-on-surface mb-1">Revenue Analytics</h2>
+                        <p class="text-[14px] text-on-surface-variant">Visualizing monthly earnings growth</p>
+                    </div>
+                    <button class="bg-surface-container text-on-surface font-bold text-[12px] px-3 py-1.5 rounded-[8px] hover:bg-surface-container-high transition-colors">
+                        Last 6 Months
+                    </button>
+                </div>
+                
+                <div class="flex items-end justify-between h-[200px] px-sm mt-8 relative">
+                    <!-- Bars -->
+                    <div class="w-[12%] bg-surface-container-high rounded-t-[6px] h-[35%]"></div>
+                    <div class="w-[12%] bg-surface-container-high rounded-t-[6px] h-[55%]"></div>
+                    <div class="w-[12%] bg-surface-container-high rounded-t-[6px] h-[45%]"></div>
+                    <div class="w-[12%] bg-surface-container-high rounded-t-[6px] h-[75%]"></div>
+                    <div class="w-[12%] bg-primary rounded-t-[6px] h-[95%] shadow-sm"></div>
+                    <div class="w-[12%] bg-surface-container-high rounded-t-[6px] h-[25%]"></div>
+                </div>
+                
+                <div class="flex justify-between mt-6 px-sm text-[12px] font-bold text-on-surface-variant">
+                    <span class="w-[12%] text-center">JAN</span>
+                    <span class="w-[12%] text-center">FEB</span>
+                    <span class="w-[12%] text-center">MAR</span>
+                    <span class="w-[12%] text-center">APR</span>
+                    <span class="w-[12%] text-center text-primary">MAY</span>
+                    <span class="w-[12%] text-center">JUN</span>
+                </div>
+            </div>
+
+            <!-- Appointment Trends -->
+            <div class="card p-lg flex flex-col">
+                <div class="mb-lg">
+                    <h2 class="text-[20px] font-bold text-on-surface mb-1">Appointment Trends</h2>
+                    <p class="text-[14px] text-on-surface-variant">Capacity vs Bookings</p>
+                </div>
+                
+                <div class="flex-1 flex flex-col items-center justify-center">
+                    <div class="relative w-[180px] h-[180px] mb-lg mt-4">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <!-- Background Circle -->
+                            <circle cx="90" cy="90" r="76" fill="transparent" stroke="#e2e8f0" stroke-width="14"></circle>
+                            <!-- Progress Circle -->
+                            <circle cx="90" cy="90" r="76" fill="transparent" stroke="#006c49" stroke-width="14" stroke-dasharray="477.5" stroke-dashoffset="119.3" stroke-linecap="round"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-[32px] font-bold text-on-surface">75%</span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mt-1">Capacity</span>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full space-y-3 px-md">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-sm">
+                                <div class="w-3 h-3 rounded-full bg-primary"></div>
+                                <span class="text-[13px] text-on-surface">Booked Slots</span>
+                            </div>
+                            <span class="font-bold text-[14px] text-on-surface">120</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-sm">
+                                <div class="w-3 h-3 rounded-full bg-[#dce9ff]"></div>
+                                <span class="text-[13px] text-on-surface">Available Slots</span>
+                            </div>
+                            <span class="font-bold text-[14px] text-on-surface">40</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Lower Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+            <!-- Upcoming Appointments -->
+            <div class="lg:col-span-2 card overflow-hidden flex flex-col">
+                <div class="p-lg flex justify-between items-center border-b border-outline-variant/20">
+                    <h2 class="text-[20px] font-bold text-on-surface">Upcoming Appointments</h2>
+                    <a href="#" class="text-primary font-bold text-[13px] hover:underline">View All</a>
+                </div>
+                
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left">
+                        <thead class="text-[12px] text-on-surface-variant border-b border-outline-variant/20">
+                            <tr>
+                                <th class="px-lg py-4 font-bold">Patient</th>
+                                <th class="px-lg py-4 font-bold">Type</th>
+                                <th class="px-lg py-4 font-bold">Time</th>
+                                <th class="px-lg py-4 font-bold">Status</th>
+                                <th class="px-lg py-4 font-bold text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-variant/10 text-[14px]">
+                            <tr class="hover:bg-surface-container-low/50 transition-colors">
+                                <td class="px-lg py-4">
+                                    <div class="flex items-center gap-md">
+                                        <div class="w-10 h-10 rounded-full bg-secondary text-white flex items-center justify-center font-bold">JW</div>
+                                        <div>
+                                            <p class="font-bold text-on-surface">John Wallace</p>
+                                            <p class="text-[12px] text-on-surface-variant">ID: #4582</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-lg py-4 text-on-surface">Annual Checkup</td>
+                                <td class="px-lg py-4 text-on-surface">09:30 AM</td>
+                                <td class="px-lg py-4">
+                                    <span class="inline-block bg-[#dcfce7] text-[#166534] px-3 py-1 rounded-full text-[12px] font-bold">Confirmed</span>
+                                </td>
+                                <td class="px-lg py-4 text-right">
+                                    <button class="text-on-surface-variant hover:text-primary transition-colors">
+                                        <span class="material-symbols-outlined">more_vert</span>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-surface-container-low/50 transition-colors">
+                                <td class="px-lg py-4">
+                                    <div class="flex items-center gap-md">
+                                        <div class="w-10 h-10 rounded-full bg-tertiary text-white flex items-center justify-center font-bold">SR</div>
+                                        <div>
+                                            <p class="font-bold text-on-surface">Sarah Reeds</p>
+                                            <p class="text-[12px] text-on-surface-variant">ID: #4590</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-lg py-4 text-on-surface">Blood Test</td>
+                                <td class="px-lg py-4 text-on-surface">11:15 AM</td>
+                                <td class="px-lg py-4">
+                                    <span class="inline-block bg-[#dbeafe] text-[#1e40af] px-3 py-1 rounded-full text-[12px] font-bold">In-Transit</span>
+                                </td>
+                                <td class="px-lg py-4 text-right">
+                                    <button class="text-on-surface-variant hover:text-primary transition-colors">
+                                        <span class="material-symbols-outlined">more_vert</span>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-surface-container-low/50 transition-colors">
+                                <td class="px-lg py-4">
+                                    <div class="flex items-center gap-md">
+                                        <div class="w-10 h-10 rounded-full bg-primary-container text-white flex items-center justify-center font-bold">MK</div>
+                                        <div>
+                                            <p class="font-bold text-on-surface">Michael Klein</p>
+                                            <p class="text-[12px] text-on-surface-variant">ID: #4601</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-lg py-4 text-on-surface">Consultation</td>
+                                <td class="px-lg py-4 text-on-surface">02:00 PM</td>
+                                <td class="px-lg py-4">
+                                    <span class="inline-block bg-[#e2e8f0] text-[#475569] px-3 py-1 rounded-full text-[12px] font-bold">Pending</span>
+                                </td>
+                                <td class="px-lg py-4 text-right">
+                                    <button class="text-on-surface-variant hover:text-primary transition-colors">
+                                        <span class="material-symbols-outlined">more_vert</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Activity Feed -->
+            <div class="card p-lg">
+                <h2 class="text-[20px] font-bold text-on-surface mb-lg">Activity Feed</h2>
+                
+                <div class="space-y-6 relative ml-1 mt-4">
+                    <!-- Item 1 -->
+                    <div class="relative pl-10 timeline-item">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-[#dcfce7] flex items-center justify-center z-10 ring-[6px] ring-white">
+                            <span class="material-symbols-outlined text-[14px] text-primary">add</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-on-surface text-[14px]">New Patient Registered</p>
+                            <p class="text-[13px] text-on-surface-variant mt-1 leading-relaxed">James Carter signed up via Patient Portal.</p>
+                            <p class="text-[12px] font-code-sm text-outline mt-2">10m ago</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Item 2 -->
+                    <div class="relative pl-10 timeline-item">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-[#dbeafe] flex items-center justify-center z-10 ring-[6px] ring-white">
+                            <span class="material-symbols-outlined text-[14px] text-secondary">description</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-on-surface text-[14px]">Lab Results Uploaded</p>
+                            <p class="text-[13px] text-on-surface-variant mt-1 leading-relaxed">Blood panel results for Emily Thorne are ready.</p>
+                            <p class="text-[12px] font-code-sm text-outline mt-2">45m ago</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Item 3 -->
+                    <div class="relative pl-10 timeline-item">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-[#fee2e2] flex items-center justify-center z-10 ring-[6px] ring-white">
+                            <span class="material-symbols-outlined text-[14px] text-error">event_busy</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-on-surface text-[14px]">Appointment Cancelled</p>
+                            <p class="text-[13px] text-on-surface-variant mt-1 leading-relaxed">David Lee cancelled his follow-up for tomorrow.</p>
+                            <p class="text-[12px] font-code-sm text-outline mt-2">2h ago</p>
+                        </div>
+                    </div>
+
+                    <!-- Item 4 -->
+                    <div class="relative pl-10 timeline-item">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-[#dcfce7] flex items-center justify-center z-10 ring-[6px] ring-white">
+                            <span class="material-symbols-outlined text-[14px] text-primary">payments</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-on-surface text-[14px]">Payment Received</p>
+                            <p class="text-[13px] text-on-surface-variant mt-1 leading-relaxed">Invoice #9042 paid in full by Medicare.</p>
+                            <p class="text-[12px] font-code-sm text-outline mt-2">4h ago</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+</body>
+</html>

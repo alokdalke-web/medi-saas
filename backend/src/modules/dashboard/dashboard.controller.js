@@ -15,7 +15,7 @@ exports.getDashboardStats = async (req, res, next) => {
     todayEnd.setDate(todayEnd.getDate() + 1);
 
     if (role === 'clinic_admin') {
-      const [totalPatients, totalDoctors, totalAppointments, recentAppointments] = await Promise.all([
+      const [totalPatients, totalDoctors, totalAppointments, recentAppointments, recentPatients] = await Promise.all([
         Patient.countDocuments({ clinicId, isDeleted: { $ne: true } }),
         Doctor.countDocuments({ clinicId, isActive: true }),
         Appointment.countDocuments({ clinicId }),
@@ -23,14 +23,41 @@ exports.getDashboardStats = async (req, res, next) => {
           .populate('patientId', 'firstName lastName patientId')
           .populate('doctorId', 'name specialization')
           .sort('-createdAt')
+          .limit(5),
+        Patient.find({ clinicId, isDeleted: { $ne: true } })
+          .sort('-createdAt')
           .limit(5)
       ]);
+
+      const activities = [
+        ...recentAppointments.map(apt => ({
+          id: apt._id.toString() + '_apt',
+          type: 'appointment',
+          title: apt.status === 'scheduled' ? 'New Appointment Scheduled' : `Appointment ${apt.status}`,
+          description: `Appointment for ${apt.patientId?.firstName} ${apt.patientId?.lastName} with Dr. ${apt.doctorId?.name}.`,
+          timestamp: apt.createdAt,
+          icon: apt.status === 'cancelled' ? 'event_busy' : 'event',
+          colorClass: apt.status === 'cancelled' ? 'bg-[#fee2e2]' : 'bg-[#dbeafe]',
+          iconColor: apt.status === 'cancelled' ? 'text-error' : 'text-secondary'
+        })),
+        ...recentPatients.map(pat => ({
+          id: pat._id.toString() + '_pat',
+          type: 'patient',
+          title: 'New Patient Registered',
+          description: `${pat.firstName} ${pat.lastName} has been registered.`,
+          timestamp: pat.createdAt,
+          icon: 'person_add',
+          colorClass: 'bg-[#dcfce7]',
+          iconColor: 'text-primary'
+        }))
+      ].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
 
       stats = {
         totalPatients,
         totalDoctors,
         totalAppointments,
-        recentAppointments
+        recentAppointments,
+        activities
       };
     } 
     else if (role === 'doctor') {
@@ -79,6 +106,37 @@ exports.getDashboardStats = async (req, res, next) => {
         checkedInToday,
         scheduledToday,
         todayQueue
+      };
+    }
+    else if (role === 'patient') {
+      const patientId = req.user._id; // In reality, we'd map user to patient, but for this simple setup we assume req.user._id or a known ID.
+      // Fetching by clinicId and patientId (or just using a generic query for the prototype)
+      const [upcomingAppointments, pastAppointments] = await Promise.all([
+        Appointment.find({ 
+          clinicId, 
+          // patientId: patientId, // uncomment if patient mapped 
+          appointmentDate: { $gte: todayStart },
+          status: { $in: ['scheduled', 'checked_in'] }
+        })
+          .populate('doctorId', 'name specialization')
+          .sort('appointmentDate appointmentTime')
+          .limit(5),
+        Appointment.find({ 
+          clinicId, 
+          // patientId: patientId, 
+          $or: [
+            { appointmentDate: { $lt: todayStart } },
+            { status: 'completed' }
+          ]
+        })
+          .populate('doctorId', 'name specialization')
+          .sort('-appointmentDate -appointmentTime')
+          .limit(5)
+      ]);
+
+      stats = {
+        upcomingAppointments,
+        pastAppointments
       };
     }
     else {

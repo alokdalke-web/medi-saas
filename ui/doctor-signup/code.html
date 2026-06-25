@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Emerald Health | Healthcare Provider Signup</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-secondary-fixed": "#001a42",
+                "on-background": "#0b1c30",
+                "primary-fixed": "#6ffbbe",
+                "surface-container-highest": "#d3e4fe",
+                "secondary": "#0058be",
+                "primary-fixed-dim": "#4edea3",
+                "primary": "#006c49",
+                "on-tertiary-container": "#4600a7",
+                "on-secondary-fixed-variant": "#004395",
+                "outline": "#6c7a71",
+                "on-tertiary-fixed": "#23005c",
+                "error-container": "#ffdad6",
+                "primary-container": "#10b981",
+                "on-secondary-container": "#fefcff",
+                "background": "#f8f9ff",
+                "on-tertiary": "#ffffff",
+                "tertiary-fixed": "#e9ddff",
+                "tertiary": "#6d3bd7",
+                "inverse-surface": "#213145",
+                "tertiary-container": "#b090ff",
+                "on-surface-variant": "#3c4a42",
+                "on-primary-fixed-variant": "#005236",
+                "on-secondary": "#ffffff",
+                "on-primary-container": "#00422b",
+                "tertiary-fixed-dim": "#d0bcff",
+                "on-primary": "#ffffff",
+                "inverse-primary": "#4edea3",
+                "on-error": "#ffffff",
+                "surface-bright": "#f8f9ff",
+                "on-primary-fixed": "#002113",
+                "surface-dim": "#cbdbf5",
+                "surface-container-high": "#dce9ff",
+                "secondary-container": "#2170e4",
+                "on-tertiary-fixed-variant": "#5516be",
+                "error": "#ba1a1a",
+                "surface-variant": "#d3e4fe",
+                "surface-container-low": "#eff4ff",
+                "secondary-fixed": "#d8e2ff",
+                "outline-variant": "#bbcabf",
+                "secondary-fixed-dim": "#adc6ff",
+                "surface-container": "#e5eeff",
+                "on-error-container": "#93000a",
+                "surface-container-lowest": "#ffffff",
+                "on-surface": "#0b1c30",
+                "inverse-on-surface": "#eaf1ff",
+                "surface-tint": "#006c49",
+                "surface": "#f8f9ff"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "sm": "8px",
+                "gutter": "24px",
+                "xs": "4px",
+                "xl": "40px",
+                "container-max": "1440px",
+                "md": "16px",
+                "xxl": "64px",
+                "lg": "24px",
+                "sidebar-width": "260px",
+                "base": "4px",
+                "sidebar-collapsed": "72px"
+            },
+            "fontFamily": {
+                "display-lg": ["Inter"],
+                "body-md": ["Inter"],
+                "headline-md": ["Inter"],
+                "headline-lg": ["Inter"],
+                "headline-sm": ["Inter"],
+                "code-sm": ["JetBrains Mono"],
+                "label-md": ["Inter"],
+                "headline-lg-mobile": ["Inter"],
+                "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                "headline-sm": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                "code-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .form-input-focus:focus {
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+        }
+        .step-transition {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .gradient-btn {
+            background: linear-gradient(135deg, #006c49 0%, #10b981 100%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        .gradient-btn:hover {
+            background: linear-gradient(135deg, #005236 0%, #059669 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-md border-b border-outline-variant/30 shadow-sm">
+<div class="flex items-center justify-between px-gutter h-16 w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="medical_services">medical_services</span>
+<span class="font-display-lg text-headline-md font-bold text-primary tracking-tight">Emerald Health</span>
+</div>
+<nav class="hidden md:flex gap-lg">
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Support</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">System Status</a>
+</nav>
+</div>
+</header>
+<main class="flex-grow pt-xxl pb-xxl px-gutter">
+<div class="max-w-[1000px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-xxl items-start">
+<!-- Sidebar Content / Info -->
+<div class="lg:col-span-5 space-y-lg sticky top-[100px]">
+<div class="space-y-sm">
+<h1 class="font-headline-lg text-headline-lg text-on-background">Join the Network of Care</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Streamline your practice with Emerald's secure, clinician-first platform. Verified providers gain instant access to our advanced patient management toolset.</p>
+</div>
+<div class="space-y-md">
+<div class="flex items-start gap-md">
+<div class="p-xs bg-primary-container/20 rounded-lg">
+<span class="material-symbols-outlined text-primary" data-icon="verified_user">verified_user</span>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm">HIPAA Compliant</p>
+<p class="text-on-surface-variant">Enterprise-grade security standards for all patient data.</p>
+</div>
+</div>
+<div class="flex items-start gap-md">
+<div class="p-xs bg-primary-container/20 rounded-lg">
+<span class="material-symbols-outlined text-primary" data-icon="analytics">analytics</span>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm">Advanced Insights</p>
+<p class="text-on-surface-variant">Real-time health analytics and reporting dashboards.</p>
+</div>
+</div>
+</div>
+<div class="rounded-xl overflow-hidden shadow-xl border border-outline-variant/30">
+<img class="w-full h-48 object-cover" data-alt="A clean, professional photograph of a modern medical office setting with a focused healthcare professional using a tablet. The lighting is bright and airy with soft emerald green accents in the decor, reflecting a clinical yet welcoming atmosphere. The composition emphasizes technology and care in a premium SaaS environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDD4pNUHCVCluXvXYmtV23FHS_TahOEEVDmCZqgTMP9x8psx42Y4ilVF85awFPhcKf_ynuTdt-iimTFmOiViuFEemyp0uWAkiMWb7HblcIXm3P2S4ZdO405tafkw4ntTigmk1zSKqr5VvCP13avpiI0G-u231g25E4mMPZrewN6-3iHlCSK2_-XNsgKArlTI3yYtPg-6SW0FBDzYFJS5M2m5ZZ7wfeVuQ8y5xpsvFCBoJmc3x-rYPwPL73Iq1Pl8bKQD4g32vK4muc"/>
+</div>
+</div>
+<!-- Signup Form Container -->
+<div class="lg:col-span-7 bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-sm p-lg md:p-xl glass">
+<!-- Progress Indicator -->
+<div class="mb-xxl">
+<div class="flex justify-between items-center mb-sm">
+<span class="text-label-md font-label-md text-primary uppercase tracking-wider" id="step-label">Step 1 of 2: Professional Details</span>
+<span class="text-label-md font-label-md text-on-surface-variant" id="step-percent">50%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary transition-all duration-700 ease-in-out" id="progress-bar" style="width: 50%;"></div>
+</div>
+</div>
+<form class="space-y-lg" id="signup-form">
+<!-- Step 1: Personal & Clinic Info -->
+<div class="step-transition space-y-lg" id="step-1">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="space-y-xs">
+<label class="text-label-md font-label-md text-on-surface-variant">Full Name</label>
+<input class="w-full h-11 px-md rounded-lg border border-outline-variant bg-surface outline-none form-input-focus transition-all" placeholder="Dr. Sarah Johnson" type="text"/>
+</div>
+<div class="space-y-xs">
+<label class="text-label-md font-label-md text-on-surface-variant">Professional Email</label>
+<input class="w-full h-11 px-md rounded-lg border border-outline-variant bg-surface outline-none form-input-focus transition-all" placeholder="sarah.j@clinic.com" type="email"/>
+</div>
+</div>
+<div class="space-y-xs">
+<label class="text-label-md font-label-md text-on-surface-variant">Clinic Name</label>
+<input class="w-full h-11 px-md rounded-lg border border-outline-variant bg-surface outline-none form-input-focus transition-all" placeholder="Northview Medical Center" type="text"/>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="space-y-xs">
+<label class="text-label-md font-label-md text-on-surface-variant">Specialty</label>
+<div class="relative">
+<select class="w-full h-11 px-md rounded-lg border border-outline-variant bg-surface outline-none form-input-focus appearance-none transition-all">
+<option disabled="" selected="" value="">Select specialty</option>
+<option>Cardiology</option>
+<option>Dermatology</option>
+<option>Family Medicine</option>
+<option>Internal Medicine</option>
+<option>Neurology</option>
+<option>Pediatrics</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 pointer-events-none text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<div class="space-y-xs">
+<label class="text-label-md font-label-md text-on-surface-variant">Medical License Number</label>
+<input class="w-full h-11 px-md rounded-lg border border-outline-variant bg-surface outline-none form-input-focus transition-all" placeholder="LIC-987654321" type="text"/>
+</div>
+</div>
+<button class="w-full h-12 rounded-lg font-semibold text-on-primary gradient-btn flex items-center justify-center gap-sm transition-all" onclick="nextStep()" type="button">
+                            Continue to Security
+                            <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<!-- Step 2: Security (Hidden initially) -->
+<div class="step-transition space-y-lg hidden opacity-0 translate-y-4" id="step-2">
+<div class="space-y-xs">
+<label class="text-label-md font-label-md text-on-surface-variant">Create Secure Password</label>
+<div class="relative">
+<input class="w-full h-11 px-md rounded-lg border border-outline-variant bg-surface outline-none form-input-focus transition-all" id="password" placeholder="Min. 12 characters" type="password"/>
+<button class="absolute right-3 top-2.5 text-on-surface-variant hover:text-primary" onclick="togglePassword()" type="button">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+<p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="info">info</span>
+                                Must include 1 uppercase, 1 number, and 1 special character.
+                            </p>
+</div>
+<div class="space-y-md pt-sm">
+<label class="flex items-start gap-md cursor-pointer group">
+<div class="relative flex items-center pt-1">
+<input class="peer h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary-container transition-all" type="checkbox"/>
+</div>
+<span class="text-body-md text-on-surface-variant group-hover:text-on-surface transition-colors">
+                                    I agree to the <a class="text-primary hover:underline" href="#">Terms of Service</a> and <a class="text-primary hover:underline" href="#">HIPAA Privacy Policy</a>. I understand that my credentials will be verified prior to full account activation.
+                                </span>
+</label>
+<label class="flex items-start gap-md cursor-pointer group">
+<div class="relative flex items-center pt-1">
+<input checked="" class="peer h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary-container transition-all" type="checkbox"/>
+</div>
+<span class="text-body-md text-on-surface-variant group-hover:text-on-surface transition-colors">
+                                    Receive security alerts and system updates via email.
+                                </span>
+</label>
+</div>
+<div class="flex gap-md pt-sm">
+<button class="flex-1 h-12 rounded-lg font-semibold text-primary border border-primary/20 hover:bg-primary/5 transition-all" onclick="prevStep()" type="button">
+                                Back
+                            </button>
+<button class="flex-[2] h-12 rounded-lg font-semibold text-on-primary gradient-btn flex items-center justify-center gap-sm transition-all shadow-md" type="submit">
+                                Create Provider Account
+                                <span class="material-symbols-outlined" data-icon="how_to_reg">how_to_reg</span>
+</button>
+</div>
+</div>
+</form>
+<div class="mt-xl pt-lg border-t border-outline-variant/30 text-center">
+<p class="text-on-surface-variant">Already have an account? <a class="text-primary font-semibold hover:underline" href="#">Sign In</a></p>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-on-background w-full py-xl border-t border-outline-variant/50">
+<div class="flex flex-col md:flex-row justify-between items-center px-gutter gap-md w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-sm">
+<span class="font-headline-sm text-headline-sm text-primary">Emerald Health</span>
+<span class="text-on-surface-variant opacity-50">|</span>
+<span class="text-body-md text-on-surface-variant font-body-md">© 2024 Emerald Health Systems. All rights reserved.</span>
+</div>
+<div class="flex gap-lg">
+<a class="text-on-surface-variant font-body-md hover:text-secondary transition-all inline-block hover:-translate-y-0.5" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant font-body-md hover:text-secondary transition-all inline-block hover:-translate-y-0.5" href="#">Terms of Service</a>
+<a class="text-on-surface-variant font-body-md hover:text-secondary transition-all inline-block hover:-translate-y-0.5" href="#">Help Center</a>
+<a class="text-on-surface-variant font-body-md hover:text-secondary transition-all inline-block hover:-translate-y-0.5" href="#">Security</a>
+</div>
+</div>
+</footer>
+<script>
+        function nextStep() {
+            const s1 = document.getElementById('step-1');
+            const s2 = document.getElementById('step-2');
+            const progress = document.getElementById('progress-bar');
+            const label = document.getElementById('step-label');
+            const percent = document.getElementById('step-percent');
+
+            s1.classList.add('opacity-0', '-translate-y-4');
+            setTimeout(() => {
+                s1.classList.add('hidden');
+                s2.classList.remove('hidden');
+                setTimeout(() => {
+                    s2.classList.remove('opacity-0', 'translate-y-4');
+                }, 50);
+            }, 300);
+
+            progress.style.width = '100%';
+            label.innerText = 'Step 2 of 2: Account Security';
+            percent.innerText = '100%';
+        }
+
+        function prevStep() {
+            const s1 = document.getElementById('step-1');
+            const s2 = document.getElementById('step-2');
+            const progress = document.getElementById('progress-bar');
+            const label = document.getElementById('step-label');
+            const percent = document.getElementById('step-percent');
+
+            s2.classList.add('opacity-0', 'translate-y-4');
+            setTimeout(() => {
+                s2.classList.add('hidden');
+                s1.classList.remove('hidden');
+                setTimeout(() => {
+                    s1.classList.remove('opacity-0', '-translate-y-4');
+                }, 50);
+            }, 300);
+
+            progress.style.width = '50%';
+            label.innerText = 'Step 1 of 2: Professional Details';
+            percent.innerText = '50%';
+        }
+
+        function togglePassword() {
+            const input = document.getElementById('password');
+            const icon = event.currentTarget.querySelector('span');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.innerText = 'visibility_off';
+            } else {
+                input.type = 'password';
+                icon.innerText = 'visibility';
+            }
+        }
+
+        document.getElementById('signup-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Show a success state or handle submission
+            const container = document.querySelector('.lg\\:col-span-7');
+            container.innerHTML = `
+                <div class="py-xxl text-center space-y-md animate-in fade-in zoom-in duration-500">
+                    <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-lg">
+                        <span class="material-symbols-outlined text-primary text-[48px]" data-icon="mark_email_read">mark_email_read</span>
+                    </div>
+                    <h2 class="font-headline-lg text-headline-lg text-on-background">Verification Pending</h2>
+                    <p class="text-body-lg text-on-surface-variant max-w-sm mx-auto">We've sent a verification link to your professional email. Please follow the instructions to complete your registration.</p>
+                    <button onclick="window.location.reload()" class="mt-lg text-primary font-semibold hover:underline">Resend verification email</button>
+                </div>
+            `;
+        });
+    </script>
+</body></html>
