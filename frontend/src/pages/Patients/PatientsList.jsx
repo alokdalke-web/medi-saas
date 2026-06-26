@@ -82,7 +82,6 @@ export default function PatientsList() {
             <div className="p-2 bg-primary-container/10 rounded-lg text-primary">
               <span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>groups</span>
             </div>
-            <span className="text-primary font-bold text-[14px]">+12%</span>
           </div>
           <p className="text-on-surface-variant text-xs font-semibold tracking-wide uppercase">Total Patients</p>
           <h2 className="text-3xl font-bold mt-1">{patients.length || "0"}</h2>
@@ -92,12 +91,11 @@ export default function PatientsList() {
             <div className="p-2 bg-secondary-container/10 rounded-lg text-secondary">
               <span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>person_add</span>
             </div>
-            <span className="text-secondary font-bold text-[14px]">+14</span>
           </div>
           <p className="text-on-surface-variant text-xs font-semibold tracking-wide uppercase">New This Week</p>
-          <h2 className="text-3xl font-bold mt-1">62</h2>
+          <h2 className="text-3xl font-bold mt-1">0</h2>
         </div>
-        <div className="card p-6 rounded-xl shadow-sm md:col-span-1 bg-surface-container-lowest border-dashed border-2 border-outline-variant/50 flex flex-col items-center justify-center gap-2 group cursor-pointer hover:bg-surface-container-low transition-colors">
+        <div onClick={handleAddPatient} className="card p-6 rounded-xl shadow-sm md:col-span-1 bg-surface-container-lowest border-dashed border-2 border-outline-variant/50 flex flex-col items-center justify-center gap-2 group cursor-pointer hover:bg-surface-container-low transition-colors">
           <div className="w-12 h-12 rounded-full bg-outline-variant/20 flex items-center justify-center text-outline group-hover:scale-110 transition-transform">
             <span className="material-symbols-outlined">analytics</span>
           </div>

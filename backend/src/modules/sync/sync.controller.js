@@ -4,6 +4,7 @@ const User = require('../users/user.model');
 const Doctor = require('../doctors/doctor.model');
 const Patient = require('../patients/patient.model');
 const Appointment = require('../appointments/appointment.model');
+const MedicalRecord = require('../medical-records/medical-record.model');
 const NotificationService = require('../notifications/services/notification.service');
 
 exports.pushEvents = async (req, res, next) => {
@@ -100,6 +101,23 @@ exports.pushEvents = async (req, res, next) => {
             break;
           case 'PatientDeleted':
             await Patient.findByIdAndUpdate(event.entity_id, { isDeleted: true, deletedAt: new Date() });
+            break;
+          case 'MedicalRecordCreated':
+            await MedicalRecord.create({
+              _id: event.entity_id,
+              clinicId: payload.clinicId || payload.clinic_id || 'default_clinic_id',
+              patientId: payload.patientId || payload.patient_id,
+              doctorId: payload.doctorId || payload.doctor_id,
+              recordType: payload.recordType || payload.record_type,
+              content: payload.content || payload,
+              ...payload
+            });
+            break;
+          case 'MedicalRecordUpdated':
+            await MedicalRecord.findByIdAndUpdate(event.entity_id, payload);
+            break;
+          case 'MedicalRecordDeleted':
+            await MedicalRecord.findByIdAndUpdate(event.entity_id, { isDeleted: true, deletedAt: new Date() });
             break;
           case 'AppointmentCreated':
             const newAppt = await Appointment.create({

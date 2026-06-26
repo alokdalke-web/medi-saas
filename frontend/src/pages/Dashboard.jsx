@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { fetchApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import MedicalRecordForms from '../components/MedicalRecordForms';
+import AppointmentFormDialog from './Appointments/AppointmentFormDialog';
 
 function timeAgo(dateInput) {
   if (!dateInput) return '';
@@ -48,7 +50,7 @@ function AdminDashboard({ stats }) {
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-on-surface mb-1">Clinic Overview</h1>
-          <p className="text-base text-on-surface-variant">You have <span className="text-primary font-bold">{stats.todaysAppointments || 12} appointments</span> scheduled for today.</p>
+          <p className="text-base text-on-surface-variant">You have <span className="text-primary font-bold">{stats.todaysAppointments || 0} appointments</span> scheduled for today.</p>
         </div>
         <div className="flex gap-4">
           <button className="bg-surface-container-low border border-outline-variant/30 text-on-surface font-bold px-4 py-2.5 rounded-lg text-sm flex items-center gap-2 hover:bg-surface-container transition-colors">
@@ -64,10 +66,10 @@ function AdminDashboard({ stats }) {
 
       {/* Metrics Grid */}
       <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        <StatCard title="Total Patients" value={stats.totalPatients?.toLocaleString() || "1,482"} icon="group" bgClass="bg-[#dcfce7]" textClass="text-primary" trend={{value: "+12%"}} />
-        <StatCard title="Total Doctors" value={stats.totalDoctors?.toLocaleString() || "45"} icon="stethoscope" bgClass="bg-[#dbeafe]" textClass="text-secondary" trend={{value: "+8.4%"}} />
-        <StatCard title="Total Appointments" value={stats.totalAppointments?.toLocaleString() || "42,500"} icon="calendar_clock" bgClass="bg-[#f3e8ff]" textClass="text-tertiary" trend={{value: "+5%"}} />
-        <StatCard title="Patient Rating" value="4.9/5" icon="verified" bgClass="bg-[#dcfce7]" textClass="text-primary" trend={{value: "+5%"}} />
+        <StatCard title="Total Patients" value={stats.totalPatients?.toLocaleString() || "0"} icon="group" bgClass="bg-[#dcfce7]" textClass="text-primary" />
+        <StatCard title="Total Doctors" value={stats.totalDoctors?.toLocaleString() || "0"} icon="stethoscope" bgClass="bg-[#dbeafe]" textClass="text-secondary" />
+        <StatCard title="Total Appointments" value={stats.totalAppointments?.toLocaleString() || "0"} icon="calendar_clock" bgClass="bg-[#f3e8ff]" textClass="text-tertiary" />
+        <StatCard title="Patient Rating" value={stats.patientRating || "0/5"} icon="verified" bgClass="bg-[#dcfce7]" textClass="text-primary" />
       </section>
 
       {/* Charts Section */}
@@ -127,14 +129,14 @@ function AdminDashboard({ stats }) {
                   <div className="w-3 h-3 rounded-full bg-primary"></div>
                   <span className="text-[13px] text-on-surface">Booked Slots</span>
                 </div>
-                <span className="font-bold text-[14px] text-on-surface">{stats.totalAppointments || 120}</span>
+                <span className="font-bold text-[14px] text-on-surface">{stats.totalAppointments || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-[#dce9ff]"></div>
                   <span className="text-[13px] text-on-surface">Available Slots</span>
                 </div>
-                <span className="font-bold text-[14px] text-on-surface">40</span>
+                <span className="font-bold text-[14px] text-on-surface">0</span>
               </div>
             </div>
           </div>
@@ -232,12 +234,32 @@ function AdminDashboard({ stats }) {
   );
 }
 
-function DoctorDashboard({ stats, user }) {
+function DoctorDashboard({ stats, user, refresh }) {
+  const [quickAction, setQuickAction] = useState(null); // 'note', 'prescription', 'referral', 'visit'
   const todayDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const todaysCount = stats.todaysAppointments || 0;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
+      {/* Quick Actions Modals */}
+      <MedicalRecordForms 
+        isOpen={['note', 'prescription', 'referral'].includes(quickAction)} 
+        type={quickAction} 
+        onClose={() => setQuickAction(null)}
+        onSuccess={() => {
+          alert('Record saved successfully!');
+          refresh();
+        }}
+      />
+      <AppointmentFormDialog
+        isOpen={quickAction === 'visit'}
+        onClose={() => setQuickAction(null)}
+        onSuccess={() => {
+          alert('Appointment created successfully!');
+          refresh();
+        }}
+      />
+
       {/* Welcome Section */}
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
@@ -310,7 +332,7 @@ function DoctorDashboard({ stats, user }) {
             </div>
             <div>
               <p className="text-xs font-bold text-on-surface-variant">Avg. Consultation</p>
-              <h4 className="text-2xl font-bold text-on-surface">18.5 min</h4>
+              <h4 className="text-2xl font-bold text-on-surface">0 min</h4>
             </div>
           </div>
           
@@ -320,42 +342,7 @@ function DoctorDashboard({ stats, user }) {
             </div>
             <div>
               <p className="text-xs font-bold text-on-surface-variant">Patient Satisfaction</p>
-              <h4 className="text-2xl font-bold text-on-surface">94.2%</h4>
-            </div>
-          </div>
-        </div>
-
-        {/* Patient Alerts & Vitals */}
-        <div className="md:col-span-8 bg-white/80 backdrop-blur-md border border-outline-variant/30 rounded-xl p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-on-surface">Patient Alerts & Vitals</h2>
-            <span className="material-symbols-outlined text-on-surface-variant cursor-pointer">filter_list</span>
-          </div>
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-error-container/10 border border-error/20 rounded-xl gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-error">blood_pressure</span>
-                </div>
-                <div>
-                  <h4 className="font-bold text-on-surface">Marcus Thorne</h4>
-                  <p className="text-xs font-bold text-error">High Blood Pressure: 165/105</p>
-                </div>
-              </div>
-              <button className="px-4 py-2 bg-error text-white text-xs font-bold rounded-lg hover:opacity-90 transition-opacity">Review</button>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-primary-container/5 border border-primary/20 rounded-xl gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-primary">lab_research</span>
-                </div>
-                <div>
-                  <h4 className="font-bold text-on-surface">Elena Rodriguez</h4>
-                  <p className="text-xs font-bold text-on-surface-variant">CBC Results Available</p>
-                </div>
-              </div>
-              <button className="px-4 py-2 border border-primary text-primary text-xs font-bold rounded-lg hover:bg-primary/5 transition-colors">View Lab</button>
+              <h4 className="text-2xl font-bold text-on-surface">0%</h4>
             </div>
           </div>
         </div>
@@ -364,19 +351,19 @@ function DoctorDashboard({ stats, user }) {
         <div className="md:col-span-4 flex flex-col gap-4">
           <h2 className="text-xl font-bold text-on-surface">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-4">
-            <button className="flex flex-col items-center justify-center gap-2 p-6 bg-white/80 backdrop-blur-md border border-outline-variant/30 rounded-xl hover:bg-primary-container/5 hover:border-primary/40 transition-all group shadow-sm">
+            <button onClick={() => setQuickAction('note')} className="flex flex-col items-center justify-center gap-2 p-6 bg-white/80 backdrop-blur-md border border-outline-variant/30 rounded-xl hover:bg-primary-container/5 hover:border-primary/40 transition-all group shadow-sm">
               <span className="material-symbols-outlined text-primary text-[32px] group-hover:scale-110 transition-transform">note_add</span>
               <span className="text-xs font-bold text-on-surface-variant">Add Note</span>
             </button>
-            <button className="flex flex-col items-center justify-center gap-2 p-6 bg-white/80 backdrop-blur-md border border-outline-variant/30 rounded-xl hover:bg-primary-container/5 hover:border-primary/40 transition-all group shadow-sm">
+            <button onClick={() => setQuickAction('prescription')} className="flex flex-col items-center justify-center gap-2 p-6 bg-white/80 backdrop-blur-md border border-outline-variant/30 rounded-xl hover:bg-primary-container/5 hover:border-primary/40 transition-all group shadow-sm">
               <span className="material-symbols-outlined text-primary text-[32px] group-hover:scale-110 transition-transform">prescriptions</span>
               <span className="text-xs font-bold text-on-surface-variant">Prescribe</span>
             </button>
-            <button className="flex flex-col items-center justify-center gap-2 p-6 bg-white/80 backdrop-blur-md border border-outline-variant/30 rounded-xl hover:bg-primary-container/5 hover:border-primary/40 transition-all group shadow-sm">
+            <button onClick={() => setQuickAction('referral')} className="flex flex-col items-center justify-center gap-2 p-6 bg-white/80 backdrop-blur-md border border-outline-variant/30 rounded-xl hover:bg-primary-container/5 hover:border-primary/40 transition-all group shadow-sm">
               <span className="material-symbols-outlined text-primary text-[32px] group-hover:scale-110 transition-transform">forward_to_inbox</span>
               <span className="text-xs font-bold text-on-surface-variant">Referral</span>
             </button>
-            <button className="flex flex-col items-center justify-center gap-2 p-6 bg-gradient-to-br from-[#10b981] to-[#006c49] text-white rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all">
+            <button onClick={() => setQuickAction('visit')} className="flex flex-col items-center justify-center gap-2 p-6 bg-gradient-to-br from-[#10b981] to-[#006c49] text-white rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all">
               <span className="material-symbols-outlined text-[32px]">add</span>
               <span className="text-xs font-bold">New Visit</span>
             </button>
@@ -458,6 +445,14 @@ function ReceptionistDashboard({ stats, refresh }) {
 }
 
 function PatientDashboard({ stats }) {
+  const [records, setRecords] = useState([]);
+
+  useEffect(() => {
+    fetchApi('/medical-records').then(res => {
+      setRecords(res.data.records || []);
+    }).catch(console.error);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
@@ -510,6 +505,56 @@ function PatientDashboard({ stats }) {
               <li className="px-6 py-8 text-center text-on-surface-variant text-sm">No past appointments.</li>
             )}
           </ul>
+        </div>
+      </div>
+
+      <div className="card overflow-hidden mt-6">
+        <div className="px-6 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
+          <h3 className="text-[20px] font-bold text-on-surface">Medical Records & Prescriptions</h3>
+        </div>
+        <div className="p-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            {records.length > 0 ? records.map(record => (
+              <div key={record._id} className="p-4 border border-outline-variant/30 rounded-xl bg-white shadow-sm">
+                <div className="flex justify-between items-start mb-3">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold capitalize ${
+                    record.recordType === 'prescription' ? 'bg-primary/10 text-primary' :
+                    record.recordType === 'referral' ? 'bg-tertiary/10 text-tertiary' :
+                    'bg-secondary/10 text-secondary'
+                  }`}>
+                    {record.recordType}
+                  </span>
+                  <span className="text-xs text-on-surface-variant">
+                    {new Date(record.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                <div className="text-sm text-on-surface">
+                  {record.recordType === 'note' && (
+                    <p className="whitespace-pre-wrap">{record.content.text}</p>
+                  )}
+                  {record.recordType === 'prescription' && (
+                    <div className="space-y-1">
+                      <p><strong>Medication:</strong> {record.content.medication}</p>
+                      <p><strong>Dosage:</strong> {record.content.dosage}</p>
+                      <p><strong>Duration:</strong> {record.content.duration}</p>
+                      {record.content.notes && <p><strong>Notes:</strong> {record.content.notes}</p>}
+                    </div>
+                  )}
+                  {record.recordType === 'referral' && (
+                    <div className="space-y-1">
+                      <p><strong>Specialty:</strong> {record.content.specialty}</p>
+                      <p><strong>Reason:</strong> {record.content.reason}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )) : (
+              <div className="col-span-2 py-8 text-center text-on-surface-variant text-sm">
+                No medical records available.
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -576,7 +621,7 @@ export default function Dashboard() {
       )}
 
       {user?.role === 'clinic_admin' && <AdminDashboard stats={stats} />}
-      {user?.role === 'doctor' && <DoctorDashboard stats={stats} user={user} />}
+      {user?.role === 'doctor' && <DoctorDashboard stats={stats} user={user} refresh={fetchStats} />}
       {user?.role === 'receptionist' && <ReceptionistDashboard stats={stats} refresh={fetchStats} />}
       {user?.role === 'patient' && <PatientDashboard stats={stats} />}
     </div>

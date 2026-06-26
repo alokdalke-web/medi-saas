@@ -66,7 +66,7 @@ exports.getDashboardStats = async (req, res, next) => {
         return next(new AppError('Doctor profile not found', 404));
       }
 
-      const [todaysAppointments, totalTreatedPatients, upcomingAppointments] = await Promise.all([
+      const [todaysAppointments, totalTreatedPatients, upcomingAppointments, appointmentHistory] = await Promise.all([
         Appointment.countDocuments({ 
           clinicId, 
           doctorId: doctor._id, 
@@ -81,13 +81,20 @@ exports.getDashboardStats = async (req, res, next) => {
         })
           .populate('patientId', 'firstName lastName gender phone')
           .sort('appointmentDate appointmentTime')
-          .limit(5)
+          .limit(5),
+        Appointment.find({
+          clinicId,
+          doctorId: doctor._id,
+        })
+          .populate('patientId', 'firstName lastName patientId')
+          .sort('-appointmentDate -appointmentTime')
       ]);
 
       stats = {
         todaysAppointments,
         totalPatientsTreated: totalTreatedPatients.length,
-        upcomingAppointments
+        upcomingAppointments,
+        appointmentHistory
       };
     }
     else if (role === 'receptionist') {

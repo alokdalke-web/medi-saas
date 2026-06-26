@@ -27,6 +27,12 @@ export default function MainLayout() {
             <span className="material-symbols-outlined">wifi</span>
             <span className="text-sm">Network Status</span>
           </NavLink>
+          {user?.role === 'doctor' && (
+            <NavLink to="/doctor-history" className={({ isActive }) => `flex items-center gap-4 rounded-lg px-4 py-2 cursor-pointer transition-colors ${isActive ? 'bg-primary-container text-on-primary-container font-bold' : 'text-on-surface-variant hover:bg-surface-container-low'}`}>
+              <span className="material-symbols-outlined">history</span>
+              <span className="text-sm">Appointment History</span>
+            </NavLink>
+          )}
           {user?.role !== 'doctor' && (
             <>
               <NavLink to="/patients" className={({ isActive }) => `flex items-center gap-4 rounded-lg px-4 py-2 cursor-pointer transition-colors ${isActive ? 'bg-primary-container text-on-primary-container font-bold' : 'text-on-surface-variant hover:bg-surface-container-low'}`}>
@@ -65,12 +71,12 @@ export default function MainLayout() {
               </div>
             ) : (
               <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary/20 shrink-0 bg-surface-container-high">
-                <img 
-                  src={user?.role === 'doctor' 
-                    ? 'https://lh3.googleusercontent.com/aida-public/AB6AXuBSmpJar3igg5uikzVqjgNRMRQVxIj9cpFs5qN4Ol2idZ3osIR9mnmp3r8P02_-zE4yY1wMZvlWCjypdjyLjSrljMPFmhYOCL44TzXZhW_CHaA_mfODPYaz7frTgeyaL_N_qLPzcAXlJnGsaPIjQHVT4YrcJSC47HXw31bpnBcVeYOy9RRo9KSxMejGfBkt9KGILXevpzLcdhzk8FzOMmJHvROiSWzytDGoQXgNJcHfhCLnVboVBDQfvWX8_i6h1ifmRwogyWBtEnI' 
-                    : `https://i.pravatar.cc/150?u=${user?.email || 'patient'}`} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover" 
+                <img
+                  src={user?.role === 'doctor'
+                    ? 'https://lh3.googleusercontent.com/aida-public/AB6AXuBSmpJar3igg5uikzVqjgNRMRQVxIj9cpFs5qN4Ol2idZ3osIR9mnmp3r8P02_-zE4yY1wMZvlWCjypdjyLjSrljMPFmhYOCL44TzXZhW_CHaA_mfODPYaz7frTgeyaL_N_qLPzcAXlJnGsaPIjQHVT4YrcJSC47HXw31bpnBcVeYOy9RRo9KSxMejGfBkt9KGILXevpzLcdhzk8FzOMmJHvROiSWzytDGoQXgNJcHfhCLnVboVBDQfvWX8_i6h1ifmRwogyWBtEnI'
+                    : `https://i.pravatar.cc/150?u=${user?.email || 'patient'}`}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}

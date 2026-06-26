@@ -5,29 +5,29 @@ const { app } = require('electron');
 let dbInstance = null;
 
 function initialize() {
-    // Get the user data path where the app can write data securely
-    const userDataPath = app.getPath('userData');
-    const dbFileName = process.env.DB_NAME || 'clinicflow-local.db';
-    const dbPath = path.join(userDataPath, dbFileName);
-    
-    console.log(`[DatabaseService] Initializing database at: ${dbPath}`);
-    
-    // Connect to better-sqlite3 database
-    dbInstance = new Database(dbPath);
-    dbInstance.pragma('journal_mode = WAL'); // Better performance and concurrency
-    
-    initializeSchema();
-    return dbInstance;
-  }
+  // Get the user data path where the app can write data securely
+  const userDataPath = app.getPath('userData');
+  const dbFileName = process.env.DB_NAME || 'clinicflow-local.db';
+  const dbPath = path.join(userDataPath, dbFileName);
 
-  function initializeSchema() {
-    if (!dbInstance) throw new Error("Database not initialized");
+  console.log(`[DatabaseService] Initializing database at: ${dbPath}`);
 
-    console.log("[DatabaseService] Running schema migrations...");
+  // Connect to better-sqlite3 database
+  dbInstance = new Database(dbPath);
+  dbInstance.pragma('journal_mode = WAL'); // Better performance and concurrency
 
-    // Create the schema. This mirrors the previous local-server but adds the upcoming tables 
-    // from the PRD for Phase 2 (Events), Phase 7 (Sync Checkpoints) and Phase 9 (Audit)
-    dbInstance.exec(`
+  initializeSchema();
+  return dbInstance;
+}
+
+function initializeSchema() {
+  if (!dbInstance) throw new Error("Database not initialized");
+
+  console.log("[DatabaseService] Running schema migrations...");
+
+  // Create the schema. This mirrors the previous local-server but adds the upcoming tables 
+  // from the PRD for Phase 2 (Events), Phase 7 (Sync Checkpoints) and Phase 9 (Audit)
+  dbInstance.exec(`
       -- Old Schema Tables
       CREATE TABLE IF NOT EXISTS clinics (
         id TEXT PRIMARY KEY,
@@ -140,6 +140,22 @@ function initialize() {
         FOREIGN KEY (created_by) REFERENCES users(id)
       );
 
+      CREATE TABLE IF NOT EXISTS medical_records (
+        id TEXT PRIMARY KEY,
+        clinic_id TEXT,
+        patient_id TEXT,
+        doctor_id TEXT,
+        record_type TEXT NOT NULL,
+        content TEXT NOT NULL,
+        is_deleted INTEGER DEFAULT 0,
+        deleted_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (clinic_id) REFERENCES clinics(id),
+        FOREIGN KEY (patient_id) REFERENCES patients(id),
+        FOREIGN KEY (doctor_id) REFERENCES doctors(id)
+      );
+
       -- Upcoming Peer-to-Peer Event Store (Phase 2)
       CREATE TABLE IF NOT EXISTS events (
         id TEXT PRIMARY KEY,
@@ -173,28 +189,28 @@ function initialize() {
       );
     `);
 
-    try {
-      dbInstance.exec(`ALTER TABLE appointments ADD COLUMN logical_clock INTEGER DEFAULT 0;`);
-      dbInstance.exec(`ALTER TABLE appointments ADD COLUMN node_id TEXT;`);
-    } catch(e) { /* Column already exists */ }
+  try {
+    dbInstance.exec(`ALTER TABLE appointments ADD COLUMN logical_clock INTEGER DEFAULT 0;`);
+    dbInstance.exec(`ALTER TABLE appointments ADD COLUMN node_id TEXT;`);
+  } catch (e) { /* Column already exists */ }
 
-    try {
-      dbInstance.prepare('ALTER TABLE appointments ADD COLUMN is_deleted INTEGER DEFAULT 0').run();
-      dbInstance.prepare('ALTER TABLE appointments ADD COLUMN deleted_at DATETIME').run();
-      console.log('[DatabaseService] Added is_deleted and deleted_at columns to appointments table.');
-    } catch (err) {
-      // Ignore if columns already exist
-    }
-
-    console.log("[DatabaseService] Schema initialized successfully");
+  try {
+    dbInstance.prepare('ALTER TABLE appointments ADD COLUMN is_deleted INTEGER DEFAULT 0').run();
+    dbInstance.prepare('ALTER TABLE appointments ADD COLUMN deleted_at DATETIME').run();
+    console.log('[DatabaseService] Added is_deleted and deleted_at columns to appointments table.');
+  } catch (err) {
+    // Ignore if columns already exist
   }
 
-  // Helper function to get database instance
-  function getDb() {
-    if (!dbInstance) {
-      throw new Error("Database not initialized. Call initialize() first.");
-    }
-    return dbInstance;
+  console.log("[DatabaseService] Schema initialized successfully");
+}
+
+// Helper function to get database instance
+function getDb() {
+  if (!dbInstance) {
+    throw new Error("Database not initialized. Call initialize() first.");
   }
+  return dbInstance;
+}
 
 module.exports = { initialize, initializeSchema, getDb };
