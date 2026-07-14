@@ -55,6 +55,7 @@ function initializeSchema() {
         role TEXT DEFAULT 'clinic_admin',
         is_active INTEGER DEFAULT 1,
         cloud_token TEXT,
+        profile_picture TEXT DEFAULT '',
         last_login DATETIME,
         is_deleted INTEGER DEFAULT 0,
         deleted_at DATETIME,
@@ -156,6 +157,27 @@ function initializeSchema() {
         FOREIGN KEY (doctor_id) REFERENCES doctors(id)
       );
 
+      CREATE TABLE IF NOT EXISTS billing (
+        id TEXT PRIMARY KEY,
+        billing_id TEXT UNIQUE,
+        clinic_id TEXT,
+        patient_id TEXT,
+        appointment_id TEXT,
+        amount REAL NOT NULL,
+        status TEXT DEFAULT 'pending',
+        payment_method TEXT DEFAULT 'Cash',
+        issued_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        due_date DATETIME,
+        notes TEXT,
+        is_deleted INTEGER DEFAULT 0,
+        deleted_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (clinic_id) REFERENCES clinics(id),
+        FOREIGN KEY (patient_id) REFERENCES patients(id),
+        FOREIGN KEY (appointment_id) REFERENCES appointments(id)
+      );
+
       -- Upcoming Peer-to-Peer Event Store (Phase 2)
       CREATE TABLE IF NOT EXISTS events (
         id TEXT PRIMARY KEY,
@@ -200,6 +222,13 @@ function initializeSchema() {
     console.log('[DatabaseService] Added is_deleted and deleted_at columns to appointments table.');
   } catch (err) {
     // Ignore if columns already exist
+  }
+
+  try {
+    dbInstance.prepare('ALTER TABLE users ADD COLUMN profile_picture TEXT DEFAULT ""').run();
+    console.log('[DatabaseService] Added profile_picture column to users table.');
+  } catch (err) {
+    // Ignore if column already exists
   }
 
   console.log("[DatabaseService] Schema initialized successfully");

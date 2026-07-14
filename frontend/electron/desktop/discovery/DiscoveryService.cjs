@@ -1,6 +1,7 @@
 const os = require('os');
 const dgram = require('dgram');
 const nodeIdentityService = require('../services/NodeIdentityService.cjs');
+const crypto = require('crypto');
 
 let peers = new Map();
 let socket = null;
@@ -38,11 +39,18 @@ function initialize() {
       try {
         const peerData = JSON.parse(msg.toString());
         const myNodeId = nodeIdentityService.getNodeId();
+        const myToken = nodeIdentityService.getClinicToken();
+
+        // Verify HMAC signature
+        const expectedSignature = crypto.createHmac('sha256', myToken).update(peerData.nodeId).digest('hex');
+        if (peerData.signature !== expectedSignature) {
+          return; // Silently drop unauthorized packets
+        }
 
       // Ignore our own broadcasts
       if (peerData.nodeId && peerData.nodeId !== myNodeId) {
         if (!peers.has(peerData.nodeId)) {
-          console.log(`[DiscoveryService] Discovered new peer: ${peerData.nodeId} at ${peerData.ip}`);
+          console.log(`[DiscoveryService] Discovered authenticated peer: ${peerData.nodeId} at ${peerData.ip}`);
         }
         // Save or update peer (also acts as a heartbeat if we added lastSeen)
         peers.set(peerData.nodeId, {
@@ -88,10 +96,14 @@ function startBroadcasting() {
     try {
       const myNodeId = nodeIdentityService.getNodeId();
       const myIp = getLocalIp();
+      const myToken = nodeIdentityService.getClinicToken();
+      
+      const signature = crypto.createHmac('sha256', myToken).update(myNodeId).digest('hex');
       
       const message = Buffer.from(JSON.stringify({
         nodeId: myNodeId,
-        ip: myIp
+        ip: myIp,
+        signature: signature
       }));
 
       socket.send(message, 0, message.length, PORT, '255.255.255.255', (err) => {

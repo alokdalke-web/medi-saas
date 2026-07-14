@@ -1,6 +1,7 @@
 const dbService = require('../database/DatabaseService.cjs');
 const ipcNotifier = require('../api/IpcNotifier.cjs');
 const crypto = require('crypto');
+const { parseTimeToMinutes, checkTimeOverlap } = require('../utils/timeUtils.cjs');
 
 let nodeId = 'PENDING_NODE_ID';
 let currentClock = 0;
@@ -127,6 +128,27 @@ function saveRemoteEvent(event) {
  */
 function applyRemoteEvent(event) {
   const db = dbService.getDb();
+  
+  // Phase 14: Last-Write-Wins (LWW) Conflict Resolution
+  // Only apply this event if it is the absolutely newest event we know about for this entity.
+  // We use logical_clock, breaking ties with node_id to ensure determinism across the P2P mesh.
+  try {
+    const latestEvent = db.prepare(`
+      SELECT id 
+      FROM events 
+      WHERE entity_id = ? 
+      ORDER BY logical_clock DESC, node_id DESC 
+      LIMIT 1
+    `).get(event.entity_id);
+
+    if (latestEvent && latestEvent.id !== event.id) {
+      console.log(`[LWW] Skipping apply for event ${event.id}. A newer event (${latestEvent.id}) already governs entity ${event.entity_id}.`);
+      return;
+    }
+  } catch (e) {
+    console.error(`[LWW] Error during conflict check for ${event.id}:`, e.message);
+  }
+
   const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
 
   console.log(`[EventStoreService] Applying event: ${event.event_type} (${event.id})`);
@@ -139,13 +161,38 @@ function applyRemoteEvent(event) {
         `).run(event.entity_id, payload.name, payload.email, payload.phone);
       break;
 
-    case 'ClinicUpdated':
-      db.prepare(`
-          UPDATE clinics 
-          SET name = ?, email = ?, phone = ?
-          WHERE id = ?
-        `).run(payload.name, payload.email, payload.phone, event.entity_id);
+    case 'ClinicUpdated': {
+      const exists = db.prepare('SELECT id FROM clinics WHERE id = ?').get(event.entity_id);
+      if (exists) {
+        db.prepare(`
+            UPDATE clinics 
+            SET name = ?, email = ?, phone = ?, logo = COALESCE(?, logo),
+                address_street = COALESCE(?, address_street),
+                address_city = COALESCE(?, address_city),
+                address_state = COALESCE(?, address_state),
+                address_country = COALESCE(?, address_country),
+                address_pincode = COALESCE(?, address_pincode)
+            WHERE id = ?
+          `).run(
+            payload.name, payload.email, payload.phone, payload.logo || null,
+            payload.address?.street || null, payload.address?.city || null,
+            payload.address?.state || null, payload.address?.country || null,
+            payload.address?.pincode || null,
+            event.entity_id
+          );
+      } else {
+        db.prepare(`
+            INSERT INTO clinics (id, name, email, phone, logo, address_street, address_city, address_state, address_country, address_pincode)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            event.entity_id, payload.name, payload.email, payload.phone, payload.logo || null,
+            payload.address?.street || null, payload.address?.city || null,
+            payload.address?.state || null, payload.address?.country || null,
+            payload.address?.pincode || null
+          );
+      }
       break;
+    }
 
     // ----------------------------------------------------------------------
     // Phase 13: Extended CRUD Mappings
@@ -204,22 +251,38 @@ function applyRemoteEvent(event) {
 
     case 'UserCreated':
       db.prepare(`
-          INSERT INTO users (id, name, email, phone, role, password, is_active)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO users (id, name, email, phone, role, password, is_active, profile_picture)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
         event.entity_id, payload.name, payload.email, payload.phone || '', payload.role || 'receptionist',
-        payload.password || 'temp_pass', payload.isActive === false ? 0 : 1
+        payload.password || 'temp_pass', payload.isActive === false ? 0 : 1, payload.profile_picture || ''
       );
       break;
-    case 'UserUpdated':
-      db.prepare(`
-          UPDATE users SET name=?, email=?, phone=?, role=?, is_active=?
-          WHERE id=?
-        `).run(
+    case 'UserUpdated': {
+      let updateFields = ['name=?', 'email=?', 'phone=?', 'role=?', 'is_active=?'];
+      let updateParams = [
         payload.name, payload.email, payload.phone || '', payload.role || 'receptionist',
-        payload.isActive === false ? 0 : 1, event.entity_id
-      );
+        payload.isActive === false ? 0 : 1
+      ];
+
+      if (payload.password) {
+        updateFields.push('password=?');
+        updateParams.push(payload.password);
+      }
+      
+      if (payload.profile_picture !== undefined) {
+        updateFields.push('profile_picture=?');
+        updateParams.push(payload.profile_picture || '');
+      }
+      
+      updateParams.push(event.entity_id);
+
+      db.prepare(`
+          UPDATE users SET ${updateFields.join(', ')}
+          WHERE id=?
+        `).run(...updateParams);
       break;
+    }
     case 'UserDeleted':
       db.prepare(`UPDATE users SET is_deleted=1, deleted_at=CURRENT_TIMESTAMP WHERE id=?`).run(event.entity_id);
       break;
@@ -228,11 +291,15 @@ function applyRemoteEvent(event) {
       let finalStatus = payload.status || 'scheduled';
 
       // Conflict Check (Winner-Takes-All algorithm using Logical Clocks)
-      const conflict = db.prepare(`
-          SELECT id, logical_clock, node_id FROM appointments 
-          WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? 
+      const existingDayAppts = db.prepare(`
+          SELECT id, logical_clock, node_id, appointment_time FROM appointments 
+          WHERE doctor_id = ? AND appointment_date = ? 
           AND status NOT IN ('cancelled', 'waitlisted')
-        `).get(payload.doctorId, payload.appointmentDate, payload.appointmentTime);
+        `).all(payload.doctorId, payload.appointmentDate);
+
+      const conflict = existingDayAppts.find(appt => 
+        checkTimeOverlap(payload.appointmentTime, appt.appointment_time, 30, 30)
+      );
 
       if (conflict) {
         const incomingClock = event.logical_clock || 0;
@@ -288,7 +355,7 @@ function applyRemoteEvent(event) {
           VALUES (?, ?, ?, ?, ?, ?)
         `).run(
         event.entity_id,
-        payload.clinicId || payload.clinic_id || 'default_clinic_id',
+        payload.clinicId || payload.clinic_id || null,
         payload.patientId || payload.patient_id,
         payload.doctorId || payload.doctor_id,
         payload.recordType || payload.record_type,
@@ -306,6 +373,41 @@ function applyRemoteEvent(event) {
       break;
     case 'MedicalRecordDeleted':
       db.prepare(`UPDATE medical_records SET is_deleted=1, deleted_at=CURRENT_TIMESTAMP WHERE id=?`).run(event.entity_id);
+      break;
+
+    case 'BillingCreated':
+      db.prepare(`
+          INSERT INTO billing (id, billing_id, clinic_id, patient_id, appointment_id, amount, status, payment_method, issued_date, due_date, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+        event.entity_id,
+        payload.billingId || `INV-${Date.now()}`,
+        payload.clinicId || payload.clinic_id || null,
+        payload.patientId || payload.patient_id,
+        payload.appointmentId || payload.appointment_id || null,
+        payload.amount,
+        payload.status || 'pending',
+        payload.paymentMethod || payload.payment_method || 'Cash',
+        payload.issuedDate || payload.issued_date || new Date().toISOString(),
+        payload.dueDate || payload.due_date || null,
+        payload.notes || ''
+      );
+      break;
+    case 'BillingUpdated':
+      db.prepare(`
+          UPDATE billing SET amount=?, status=?, payment_method=?, due_date=?, notes=?
+          WHERE id=?
+        `).run(
+        payload.amount,
+        payload.status,
+        payload.paymentMethod || payload.payment_method,
+        payload.dueDate || payload.due_date,
+        payload.notes || '',
+        event.entity_id
+      );
+      break;
+    case 'BillingDeleted':
+      db.prepare(`UPDATE billing SET is_deleted=1, deleted_at=CURRENT_TIMESTAMP WHERE id=?`).run(event.entity_id);
       break;
 
     default:

@@ -5,6 +5,7 @@ const { app } = require('electron');
 
 let nodeId = null;
 let cloudUrl = null;
+let clinicToken = null;
 let configPath = '';
 
 function initialize() {
@@ -23,17 +24,20 @@ function initialize() {
         const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
         nodeId = data.nodeId;
         cloudUrl = data.cloudUrl || null;
+        clinicToken = data.clinicToken || 'default-clinic-token';
         console.log(`[NodeIdentityService] Loaded existing Node ID: ${nodeId}`);
       } else {
         nodeId = `node-${crypto.randomUUID()}`;
         cloudUrl = null;
-        fs.writeFileSync(configPath, JSON.stringify({ nodeId: nodeId, cloudUrl: cloudUrl }, null, 2), 'utf8');
+        clinicToken = 'default-clinic-token';
+        fs.writeFileSync(configPath, JSON.stringify({ nodeId, cloudUrl, clinicToken }, null, 2), 'utf8');
         console.log(`[NodeIdentityService] Generated new Node ID: ${nodeId}`);
       }
     } catch (error) {
       console.error('[NodeIdentityService] Failed to initialize node identity:', error);
       // Fallback in case of catastrophic file system failure
       nodeId = `node-fallback-${Date.now()}`;
+      clinicToken = 'default-clinic-token';
     }
   }
 
@@ -48,6 +52,10 @@ function getCloudUrl() {
   return cloudUrl;
 }
 
+function getClinicToken() {
+  return clinicToken || 'default-clinic-token';
+}
+
 function setCloudUrl(url) {
   cloudUrl = url;
   const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -59,5 +67,6 @@ module.exports = {
   initialize,
   getNodeId,
   getCloudUrl,
-  setCloudUrl
+  setCloudUrl,
+  getClinicToken
 };

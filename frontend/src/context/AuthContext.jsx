@@ -10,26 +10,27 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      if (token) {
-        try {
-          const data = await fetchApi('/auth/me');
-          if (data) {
-            setUser(data);
-          } else {
-            // Token invalid or expired
-            localStorage.removeItem('token');
-            localStorage.removeItem('cloudToken');
-            setToken(null);
-            setUser(null);
-          }
-        } catch (e) {
-          console.error('Failed to load user', e);
+  const loadUser = async () => {
+    if (token) {
+      try {
+        const data = await fetchApi('/auth/me');
+        if (data) {
+          setUser(data);
+        } else {
+          // Token invalid or expired
+          localStorage.removeItem('token');
+          localStorage.removeItem('cloudToken');
+          setToken(null);
+          setUser(null);
         }
+      } catch (e) {
+        console.error('Failed to load user', e);
       }
-      setLoading(false);
-    };
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     loadUser();
   }, [token]);
 
@@ -67,7 +68,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, reloadUser: loadUser }}>
       {children}
     </AuthContext.Provider>
   );

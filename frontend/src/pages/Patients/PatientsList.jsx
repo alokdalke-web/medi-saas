@@ -150,8 +150,12 @@ export default function PatientsList() {
               <div className="flex flex-col md:grid md:grid-cols-12 md:items-center p-4 md:p-6 gap-4">
                 
                 <div className="col-span-4 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary-container/20 flex items-center justify-center bg-surface-container-high text-on-surface-variant font-bold">
-                    {pat.firstName?.[0]}{pat.lastName?.[0]}
+                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary-container/20 flex items-center justify-center bg-surface-container-high text-on-surface-variant font-bold shrink-0">
+                    {pat.profile_picture ? (
+                      <img src={pat.profile_picture} alt={`${pat.firstName} ${pat.lastName}`} className="w-full h-full object-cover" />
+                    ) : (
+                      `${pat.firstName?.[0] || ''}${pat.lastName?.[0] || ''}` || 'PT'
+                    )}
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-on-surface">{pat.firstName} {pat.lastName}</h3>

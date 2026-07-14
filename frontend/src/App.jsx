@@ -13,6 +13,8 @@ import PatientsList from "./pages/Patients/PatientsList";
 import AppointmentsList from './pages/Appointments/AppointmentsList';
 import DoctorHistory from './pages/Doctors/DoctorHistory';
 import NetworkNodes from './pages/Network/NetworkNodes';
+import ProfileSettings from './pages/ProfileSettings';
+import BillingList from './pages/Billing/BillingList';
 
 function App() {
   return (
@@ -30,6 +32,7 @@ function App() {
               <Route element={<MainLayout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/network" element={<NetworkNodes />} />
+                <Route path="/profile" element={<ProfileSettings />} />
 
                 {/* Admin & Receptionist Routes */}
                 <Route element={<ProtectedRoute allowedRoles={['clinic_admin', 'receptionist']} />}>
@@ -47,6 +50,11 @@ function App() {
                 <Route element={<ProtectedRoute allowedRoles={['clinic_admin']} />}>
                   <Route path="/users" element={<UsersList />} />
                   <Route path="/settings" element={<ClinicSettings />} />
+                </Route>
+
+                {/* Billing & Admin/Receptionist Routes */}
+                <Route element={<ProtectedRoute allowedRoles={['clinic_admin', 'receptionist', 'billing']} />}>
+                  <Route path="/billing" element={<BillingList />} />
                 </Route>
               </Route>
             </Route>

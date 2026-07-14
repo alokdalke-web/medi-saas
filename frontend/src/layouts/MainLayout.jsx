@@ -49,6 +49,12 @@ export default function MainLayout() {
               </NavLink>
             </>
           )}
+          {['clinic_admin', 'receptionist', 'billing'].includes(user?.role) && (
+            <NavLink to="/billing" className={({ isActive }) => `flex items-center gap-4 rounded-lg px-4 py-2 cursor-pointer transition-colors ${isActive ? 'bg-primary-container text-on-primary-container font-bold' : 'text-on-surface-variant hover:bg-surface-container-low'}`}>
+              <span className="material-symbols-outlined">receipt_long</span>
+              <span className="text-sm">Billing</span>
+            </NavLink>
+          )}
           {user?.role === 'clinic_admin' && (
             <>
               <NavLink to="/users" className={({ isActive }) => `flex items-center gap-4 rounded-lg px-4 py-2 cursor-pointer transition-colors ${isActive ? 'bg-primary-container text-on-primary-container font-bold' : 'text-on-surface-variant hover:bg-surface-container-low'}`}>
@@ -63,31 +69,46 @@ export default function MainLayout() {
           )}
         </nav>
 
-        <div className="border-t border-outline-variant/20 p-6">
-          <div className="flex items-center gap-4">
+        <div className="border-t border-outline-variant/20 p-4">
+          <NavLink to="/profile" className={({ isActive }) => `flex items-center gap-4 p-2 rounded-xl transition-colors cursor-pointer ${isActive ? 'bg-surface-container-high' : 'hover:bg-surface-container-low'}`}>
             {user?.role === 'clinic_admin' ? (
-              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-sm shrink-0">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
+                {user?.profile_picture ? (
+                  <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  user?.email?.charAt(0).toUpperCase() || 'U'
+                )}
               </div>
             ) : (
               <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary/20 shrink-0 bg-surface-container-high">
-                <img
-                  src={user?.role === 'doctor'
-                    ? 'https://lh3.googleusercontent.com/aida-public/AB6AXuBSmpJar3igg5uikzVqjgNRMRQVxIj9cpFs5qN4Ol2idZ3osIR9mnmp3r8P02_-zE4yY1wMZvlWCjypdjyLjSrljMPFmhYOCL44TzXZhW_CHaA_mfODPYaz7frTgeyaL_N_qLPzcAXlJnGsaPIjQHVT4YrcJSC47HXw31bpnBcVeYOy9RRo9KSxMejGfBkt9KGILXevpzLcdhzk8FzOMmJHvROiSWzytDGoQXgNJcHfhCLnVboVBDQfvWX8_i6h1ifmRwogyWBtEnI'
-                    : `https://i.pravatar.cc/150?u=${user?.email || 'patient'}`}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
+                {user?.profile_picture ? (
+                  <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <img
+                    src={user?.role === 'doctor'
+                      ? 'https://lh3.googleusercontent.com/aida-public/AB6AXuBSmpJar3igg5uikzVqjgNRMRQVxIj9cpFs5qN4Ol2idZ3osIR9mnmp3r8P02_-zE4yY1wMZvlWCjypdjyLjSrljMPFmhYOCL44TzXZhW_CHaA_mfODPYaz7frTgeyaL_N_qLPzcAXlJnGsaPIjQHVT4YrcJSC47HXw31bpnBcVeYOy9RRo9KSxMejGfBkt9KGILXevpzLcdhzk8FzOMmJHvROiSWzytDGoQXgNJcHfhCLnVboVBDQfvWX8_i6h1ifmRwogyWBtEnI'
+                      : `https://i.pravatar.cc/150?u=${user?.email || 'patient'}`}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
             )}
             <div className="flex flex-col flex-1 overflow-hidden">
               <span className="text-[13px] font-bold text-on-surface truncate">{user?.name || user?.email || 'User'}</span>
               <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold truncate">{user?.role?.replace('_', ' ')}</span>
             </div>
-            <button onClick={logout} className="text-on-surface-variant hover:text-primary transition-colors flex-shrink-0">
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                logout();
+              }} 
+              className="text-on-surface-variant hover:text-primary transition-colors flex-shrink-0 p-1"
+            >
               <span className="material-symbols-outlined">logout</span>
             </button>
-          </div>
+          </NavLink>
         </div>
       </aside>
 

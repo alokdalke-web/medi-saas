@@ -166,8 +166,12 @@ export default function AppointmentsList() {
                     <span className="material-symbols-outlined">drag_indicator</span>
                   </div>
                   
-                  <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg flex-shrink-0">
-                    {apt.patientId?.firstName?.[0]}{apt.patientId?.lastName?.[0]}
+                  <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg flex-shrink-0 overflow-hidden">
+                    {apt.patientId?.profile_picture ? (
+                      <img src={apt.patientId.profile_picture} alt={`${apt.patientId.firstName} ${apt.patientId.lastName}`} className="w-full h-full object-cover" />
+                    ) : (
+                      `${apt.patientId?.firstName?.[0] || ''}${apt.patientId?.lastName?.[0] || ''}`
+                    )}
                   </div>
                   
                   <div className="flex-1 min-w-0">

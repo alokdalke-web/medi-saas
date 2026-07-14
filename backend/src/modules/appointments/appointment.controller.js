@@ -32,6 +32,8 @@ exports.getAllAppointments = async (req, res, next) => {
   }
 };
 
+const { parseTimeToMinutes, checkTimeOverlap } = require('../../utils/timeUtils');
+
 exports.createAppointment = async (req, res, next) => {
   try {
     const { doctorId, appointmentDate, appointmentTime, patientId, reason } = req.body;
@@ -51,7 +53,11 @@ exports.createAppointment = async (req, res, next) => {
       
       const { startTime, endTime } = doctor.availability;
       if (startTime && endTime) {
-        if (appointmentTime < startTime || appointmentTime > endTime) {
+        const reqMinutes = parseTimeToMinutes(appointmentTime);
+        const startMinutes = parseTimeToMinutes(startTime);
+        const endMinutes = parseTimeToMinutes(endTime);
+        
+        if (reqMinutes === null || startMinutes === null || endMinutes === null || reqMinutes < startMinutes || (reqMinutes + 30) > endMinutes) {
           return next(new AppError(`Appointment time is outside the doctor's working hours (${startTime} - ${endTime}).`, 400));
         }
       }
@@ -62,15 +68,18 @@ exports.createAppointment = async (req, res, next) => {
     const endOfDay = new Date(dateObj);
     endOfDay.setUTCHours(23, 59, 59, 999);
 
-    const existingAppointment = await Appointment.findOne({
+    const existingAppointments = await Appointment.find({
       clinicId: req.clinicId,
       doctorId,
       appointmentDate: { $gte: startOfDay, $lte: endOfDay },
-      appointmentTime,
       status: { $ne: 'cancelled' }
     });
 
-    if (existingAppointment) {
+    const hasConflict = existingAppointments.some(appt => 
+      checkTimeOverlap(appointmentTime, appt.appointmentTime, 30, 30)
+    );
+
+    if (hasConflict) {
       return next(new AppError('The doctor is already booked for this time slot.', 400));
     }
 
@@ -148,6 +157,37 @@ exports.updateAppointment = async (req, res, next) => {
     } else if (updates.status === 'completed' && !updates.completedAt) {
       updates.completedAt = new Date();
     }
+    const currentAppt = await Appointment.findOne({ _id: req.params.id, clinicId: req.clinicId });
+    if (!currentAppt) {
+      return next(new AppError('No appointment found with that ID', 404));
+    }
+
+    const newDate = updates.appointmentDate || currentAppt.appointmentDate;
+    const newTime = updates.appointmentTime || currentAppt.appointmentTime;
+
+    if (updates.appointmentDate || updates.appointmentTime) {
+      const dateObj = new Date(newDate);
+      const startOfDay = new Date(dateObj);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(dateObj);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      const existingAppointments = await Appointment.find({
+        clinicId: req.clinicId,
+        doctorId: currentAppt.doctorId,
+        appointmentDate: { $gte: startOfDay, $lte: endOfDay },
+        _id: { $ne: currentAppt._id },
+        status: { $ne: 'cancelled' }
+      });
+
+      const hasConflict = existingAppointments.some(appt => 
+        checkTimeOverlap(newTime, appt.appointmentTime, 30, 30)
+      );
+
+      if (hasConflict) {
+        return next(new AppError('The doctor is already booked for this time slot.', 400));
+      }
+    }
 
     const appointment = await Appointment.findOneAndUpdate(
       { _id: req.params.id, clinicId: req.clinicId },
@@ -155,9 +195,6 @@ exports.updateAppointment = async (req, res, next) => {
       { new: true, runValidators: true }
     ).populate('patientId').populate('doctorId');
 
-    if (!appointment) {
-      return next(new AppError('No appointment found with that ID', 404));
-    }
 
     try {
       const clinic = await Clinic.findById(req.clinicId);

@@ -1,35 +1,55 @@
 export const fetchApi = async (endpoint, options = {}) => {
-  // The app is now fully Offline-First P2P. 
-  // All API calls must go through the Electron IPC Bridge to the LocalApi.
-  if (!window.electronAPI || !window.electronAPI.invokeApi) {
-    console.error('Electron IPC bridge not found! The app must be run within the Electron desktop environment.');
-    throw new Error('Electron environment required for P2P operations.');
+  // Inject token from localStorage for authentication
+  const token = localStorage.getItem('token');
+  const enrichedOptions = {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+  };
+
+  // 1. If inside Electron, use the Local P2P IPC Bridge
+  if (window.electronAPI && window.electronAPI.invokeApi) {
+    try {
+      const result = await window.electronAPI.invokeApi(endpoint, enrichedOptions);
+      if (result && result.error) {
+         throw new Error(result.message || result.error);
+      }
+      return result;
+    } catch (error) {
+      console.error(`[IPC API Error] ${endpoint}:`, error);
+      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        window.dispatchEvent(new Event('auth_error'));
+      }
+      throw error;
+    }
   }
 
+  // 2. Fallback to standard web backend for browsers, tests, and CI/CD
+  console.warn(`[Web Fallback] Electron IPC not found. Routing ${endpoint} to standard web backend.`);
+  const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5000/api';
+  
   try {
-    // Inject token from localStorage for local offline authentication
-    const token = localStorage.getItem('token');
-    const enrichedOptions = {
-      ...options,
-      headers: {
-        ...options.headers,
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      }
-    };
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, enrichedOptions);
+    
+    let data = {};
+    try {
+      data = await response.json();
+    } catch (e) {
+      // Not JSON response
+    }
 
-    const result = await window.electronAPI.invokeApi(endpoint, enrichedOptions);
-    if (result && result.error) {
-       throw new Error(result.message || result.error);
+    if (!response.ok) {
+      if (response.status === 401) {
+        window.dispatchEvent(new Event('auth_error'));
+      }
+      throw new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
     }
-    return result;
+    return data;
   } catch (error) {
-    console.error(`[IPC API Error] ${endpoint}:`, error);
-    
-    // Simulate 401 dispatch for frontend auth handling if LocalApi throws an auth error
-    if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-      window.dispatchEvent(new Event('auth_error'));
-    }
-    
+    console.error(`[Web API Error] ${endpoint}:`, error);
     throw error;
   }
 };
